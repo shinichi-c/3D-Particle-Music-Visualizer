@@ -1,3 +1,12 @@
+
+<img width="1080" height="2261" alt="Screenshot_20251005-195832_Google" src="https://github.com/user-attachments/assets/86c24cb1-3636-4eb6-86c3-01f0fd081bfa" />
+<img width="1080" height="2261" alt="Screenshot_20251005-195836_Google" src="https://github.com/user-attachments/assets/19c588c0-1323-4ef0-926e-c995ae31c2c4" />
+<img width="1080" height="2261" alt="Screenshot_20251005-195841_Google" src="https://github.com/user-attachments/assets/0212f8a0-95d6-4ac7-9d2e-751a400c2b1d" />
+<img width="1080" height="2261" alt="Screenshot_20251005-195844_Google" src="https://github.com/user-attachments/assets/980a46c7-207b-44cc-8726-a2fdf2bc40c2" />
+<img width="1080" height="2261" alt="Screenshot_20251005-195858_Google" src="https://github.com/user-attachments/assets/78043578-fcf0-4faf-993e-ce409f953c33" />
+<img width="1080" height="2261" alt="Screenshot_20251005-195903_Google" src="https://github.com/user-attachments/assets/46bf9fc8-52de-43dc-ac0a-8bfd155803d0" />
+<img width="1080" height="2261" alt="Screenshot_20251005-195908_Google" src="https://github.com/user-attachments/assets/04bda016-f2ad-442c-932d-5725ad9f7a0c" />
+
 # 3D-Particle-Music-Visualizer
 
 A responsive, single-file web application that visualizes audio data in real-time using a dynamic 3D particle system built with Three.js and Tone.js. The application includes a clean, mobile-optimized control panel and a modern status bar.
