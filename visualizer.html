@@ -1,0 +1,1236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="viewport-fit=cover, width=device-width, initial-scale=1.0">
+    <title>3D Particle Master Control</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
+    <style>
+        /* Custom CSS to match the Control Panel screenshot style */
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: #0d0e13; 
+            cursor: default; /* Start with default cursor */
+        }
+        #visualizer-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 0;
+        }
+        #controls-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            transition: opacity 0.5s ease-in-out, visibility 0.5s;
+        }
+        #controls {
+            width: 90vw;
+            max-width: 400px;
+            /* Solid white background */
+            background: #ffffff; 
+            border-radius: 20px;
+            /* Neumorphic Shadow: Only dark shadow remains for lift */
+            box-shadow: 
+                0px 8px 30px rgba(0, 0, 0, 0.6);       
+            padding: 1rem;
+            color: #333;
+        }
+
+        .hidden-controls {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .quick-setting-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 0.5rem 0.25rem;
+            cursor: pointer;
+            border-radius: 12px;
+            transition: background 0.2s;
+        }
+        .quick-setting-item:hover {
+            background: rgba(0, 0, 0, 0.05);
+        }
+
+        .quick-setting-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 0.25rem;
+            transition: background 0.2s, transform 0.1s;
+        }
+        .quick-setting-icon:active {
+            transform: scale(0.95);
+        }
+
+        /* Active state styles */
+        .active-icon {
+            background: #4f46e5;
+            color: white;
+        }
+        .inactive-icon {
+            background: rgba(0, 0, 0, 0.1);
+            color: #4f46e5;
+        }
+        
+        /* UPDATED START BUTTON STYLING */
+        .control-button {
+            width: 100%;
+            padding: 0.85rem; /* Slightly taller */
+            font-size: 1rem;
+            font-weight: 700; /* Bolder text */
+            color: #ffffff;
+            background: linear-gradient(135deg, #4f46e5, #6366f1);
+            border: none;
+            border-radius: 10px; /* Slightly more rounded */
+            cursor: pointer;
+            box-shadow: 0 6px 15px rgba(79, 70, 229, 0.5); /* Stronger initial shadow */
+            transition: all 0.2s ease;
+        }
+        .control-button:hover {
+            background: linear-gradient(135deg, #6366f1, #818cf8);
+            box-shadow: 0 8px 20px rgba(79, 70, 229, 0.7);
+            transform: translateY(-2px); /* Lighter lift */
+        }
+        .control-button:active {
+            transform: translateY(1px); /* New press effect */
+            box-shadow: 0 2px 5px rgba(79, 70, 229, 0.4);
+        }
+        
+        /* New Range Slider Styling for a Fresh Look */
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px; /* Slightly thinner track */
+            background: rgba(0, 0, 0, 0.1); /* Very light, subtle track */
+            border-radius: 3px;
+            outline: none;
+            cursor: pointer;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px; /* Slightly smaller thumb */
+            height: 18px;
+            border-radius: 50%;
+            background: #4f46e5; /* Bold Indigo */
+            cursor: pointer;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3); /* Clean lift effect */
+            transition: background 0.1s;
+        }
+        input[type="range"]::-webkit-slider-thumb:hover {
+            background: #3730a3; /* Darker on hover */
+        }
+
+
+        /* Styling for the canvas cursor when interactive */
+        #visualizer-container canvas {
+            cursor: grab;
+        }
+        #visualizer-container canvas.grabbing {
+            cursor: grabbing;
+        }
+        
+        /* Styling for the hidden file input */
+        #audioFile {
+            display: none;
+        }
+
+        /* UPDATED FILE UPLOAD BUTTON STYLING (Ghost Button) */
+        .file-input-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem; /* Space between icon and text */
+            width: 100%;
+            padding: 0.85rem 1rem;
+            background-color: transparent; /* Ghost style */
+            border: 2px solid #6366f1; /* Primary color border */
+            border-radius: 10px; 
+            cursor: pointer;
+            font-weight: 600;
+            color: #4f46e5;
+            transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+        }
+        .file-input-label:hover {
+            background-color: #eef2ff; /* Very light background on hover */
+            color: #3730a3; /* Darker text on hover */
+            border-color: #3730a3;
+        }
+        
+        /* Central toggle button style */
+        #toggleControlsButton {
+            position: absolute;
+            top: -24px; 
+            left: 50%;
+            transform: translateX(-50%);
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: #e0e0e0; 
+            border: 4px solid rgba(220, 230, 240, 0.9); 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 
+                0 4px 15px rgba(0, 0, 0, 0.5); 
+            transition: transform 0.2s, background 0.2s;
+        }
+        #toggleControlsButton:hover {
+            background: #dadada;
+        }
+        #toggleControlsButton svg {
+            color: #4f46e5; 
+            width: 24px;
+            height: 24px;
+            transition: transform 0.3s;
+        }
+
+        /* CHROME OS STYLE STATUS BAR */
+        #status-bar {
+            /* Keep status bar slightly translucent */
+            background: rgba(220, 230, 240, 0.9); 
+            color: #374151; 
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 24px 24px 0 0; 
+            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3); 
+            position: fixed;
+            bottom: 0; 
+            left: 0; 
+            right: 0; 
+            width: 100%; 
+            height: 56px; 
+            padding: 0 1.5rem; 
+            display: flex;
+            justify-content: space-between; 
+            align-items: center;
+            font-size: 0.9rem; 
+            font-weight: 500;
+            z-index: 20; 
+        }
+
+        /* Battery Status styles */
+        .status-text {
+            /* REMOVED fixed color: #6b7280; -> Color is now set dynamically by JS to match battery text color */
+            font-weight: 500;
+            font-size: 0.9rem; 
+            transition: color 0.3s ease; /* Added transition for smooth color change */
+        }
+        #battery-status {
+            display: flex;
+            align-items: center;
+            padding: 0.3rem 0.6rem;
+            border-radius: 8px;
+            cursor: default; 
+            transition: background 0.2s;
+        }
+        .battery-icon-ring {
+            width: 28px; 
+            height: 28px; 
+            margin-right: 0.5rem; 
+            display: block; 
+        }
+        #battery-level-text {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: #374151; /* Initial color */
+            line-height: 1; 
+            transition: color 0.3s ease; /* Added transition for smooth color change */
+        }
+        /* Custom Header accent */
+        #controls-header {
+            /* Added subtle purple border for a premium touch */
+            border-bottom: 4px solid #6366f1;
+            border-radius: 0 0 4px 4px;
+            padding-bottom: 1rem;
+            margin-bottom: 1rem;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="visualizer-container"></div>
+
+    <div id="controls-overlay">
+        <div id="controls">
+            <!-- HEADER ROW (Now wrapped in #controls-header) -->
+            <div id="controls-header" class="flex justify-between items-center">
+                <div class="flex items-center space-x-2">
+                    <img src="https://placehold.co/36x36/4f46e5/ffffff?text=3D" class="w-9 h-9 rounded-full"/>
+                    <span class="font-semibold text-lg">Visualizer Controls</span>
+                </div>
+            </div>
+
+            <!-- QUICK SETTINGS GRID -->
+            <div class="grid grid-cols-3 gap-y-3 mb-6 text-sm">
+                
+                <!-- 1. Particle Motion Toggle (Functional) -->
+                <div class="quick-setting-item" id="toggleMotion">
+                    <div class="quick-setting-icon active-icon" id="iconMotion">
+                        <!-- NEW ICON: Sine Wave for Motion -->
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12a2.49 2.49 0 0 1 2.5-2.5c2.5 0 2.5 5 5 5s2.5-5 5-5 2.5 5 5 5 2.5-2.5 2.5-2.5"/></svg>
+                    </div>
+                    <span class="font-medium text-gray-800">Motion</span>
+                    <span class="text-xs text-green-600 font-semibold" id="statusMotion">Active</span>
+                </div>
+
+                <!-- 2. High Freq Pulse Toggle (Functional) -->
+                <div class="quick-setting-item" id="toggleHighFreq">
+                    <div class="quick-setting-icon active-icon" id="iconHighFreq">
+                        <!-- NEW ICON: Clean Lightning Bolt for High Freq Pulse -->
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2l-3 8h5l-6 12l2-8h-5z"/></svg>
+                    </div>
+                    <span class="font-medium text-gray-800">High Freq</span>
+                    <span class="text-xs text-green-600 font-semibold" id="statusHighFreq">Pulse ON</span>
+                </div>
+
+                <!-- 3. Bass Reaction Toggle (Functional) -->
+                <div class="quick-setting-item" id="toggleBass">
+                    <div class="quick-setting-icon active-icon" id="iconBass">
+                        <!-- NEW ICON: Speaker with Sound Waves for Bass -->
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 8a5 5 0 0 1 0 8"/><path d="M17.66 6.34a9 9 0 0 1 0 11.32"/><path d="M2 10h3l5-5v14l-5-5H2z"/></svg>
+                    </div>
+                    <span class="font-medium text-gray-800">Bass React</span>
+                    <span class="text-xs text-green-600 font-semibold" id="statusBass">Active</span>
+                </div>
+
+                <!-- 4. Color Theme Cycle (Functional) -->
+                <div class="quick-setting-item" id="cycleTheme">
+                    <div class="quick-setting-icon inactive-icon text-indigo-500" id="iconTheme">
+                        <!-- NEW ICON: Color Palette for Theme -->
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 7c-4.4 0-8 3.6-8 8s3.6 8 8 8c3 0 5.6-1.7 6.9-4.2M12 7V4M12 21v-3"/><path d="M12 7a8 8 0 0 1 8 8c0 3-1.7 5.6-4.2 6.9"/><path d="M12 7a8 8 0 0 0-8 8c0 3 1.7 5.6 4.2 6.9"/></svg>
+                    </div>
+                    <span class="font-medium text-gray-800">Theme</span>
+                    <span class="text-xs text-gray-600 font-semibold" id="statusTheme">Indigo/Pink</span>
+                </div>
+
+                <!-- 5. Background Mode Toggle (Functional) -->
+                <div class="quick-setting-item" id="toggleBackground">
+                    <div class="quick-setting-icon inactive-icon text-gray-600" id="iconBackground">
+                        <!-- NEW ICON: Simple Sun/Moon for Background -->
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+                    </div>
+                    <span class="font-medium text-gray-800">Night Mode</span>
+                    <span class="text-xs text-gray-600 font-semibold" id="statusBackground">OFF (Dark)</span>
+                </div>
+                
+            </div>
+
+            <!-- SLIDERS -->
+            <div class="space-y-4 mb-6 pt-4 border-t border-gray-300">
+                <div class="flex items-center space-x-3">
+                    <!-- Volume Icon -->
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-gray-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 8a5 5 0 0 1 0 8"/><path d="M17.66 6.34a9 9 0 0 1 0 11.32"/><path d="M2 10h3l5-5v14l-5-5H2z"/></svg>
+                    <input type="range" min="-30" max="0" value="-6" step="1" id="volumeSlider" class="flex-grow">
+                    <span class="text-sm font-semibold text-gray-700 w-8 text-right">Vol</span>
+                </div>
+
+                <div class="flex items-center space-x-3">
+                    <!-- Particle Size Icon (Target) -->
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-gray-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M20 12h2M2 12h2"/></svg>
+                    <input type="range" min="1" max="5" value="2" step="0.1" id="sizeSlider" class="flex-grow">
+                    <span class="text-sm font-semibold text-gray-700 w-8 text-right">Size</span>
+                </div>
+            </div>
+
+
+            <!-- FILE UPLOAD AND START BUTTON -->
+            <div class="space-y-4">
+                <label for="audioFile" class="file-input-label">
+                    <!-- New Upload Icon -->
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+                    <span id="fileNameDisplay" class="text-sm">Tap to Upload Music (.mp3, .wav, etc.)</span>
+                </label>
+                <input type="file" accept="audio/*" id="audioFile">
+                
+                <button id="startButton" class="control-button">
+                    Start Synthetic Beat
+                </button>
+            </div>
+            
+            <div class="text-center text-xs mt-3 text-gray-500">
+                Tap the screen to rotate and pinch/scroll to zoom.
+            </div>
+        </div>
+    </div>
+    
+    <!-- STATUS BAR (Fixed at Bottom) -->
+    <div id="status-bar">
+        
+        <!-- Toggle Control Button (NEW) -->
+        <button id="toggleControlsButton" aria-label="Toggle Control Panel">
+            <svg id="toggleIcon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <!-- Icon for 'Controls Hidden' (Chevrons Up) -->
+                <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+        </button>
+        <!-- End Toggle Control Button -->
+
+        <!-- LEFT SIDE: Battery Status only -->
+        <div id="status-left">
+            <!-- Battery Status - CIRCULAR Icon with Percentage -->
+            <div id="battery-status">
+                <!-- New Circular Battery Icon Container -->
+                <svg id="batteryIconRing" class="battery-icon-ring" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <!-- SVG contents will be dynamically generated by JS -->
+                </svg>
+                <span id="battery-level-text">--%</span>
+            </div>
+        </div>
+
+        <!-- RIGHT SIDE: FPS and Time -->
+        <div class="flex space-x-4">
+            <span id="status-fps" class="status-text">FPS: --</span>
+            <span id="status-time" class="status-text">--:--:--</span>
+        </div>
+    </div>
+    <!-- END STATUS BAR -->
+
+    <script>
+        // Global variables for Firebase access (required by the environment, though not used here)
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        // --- Three.js Setup ---
+        let scene, camera, renderer, particles, geometry, material;
+        let positions, velocities, colors;
+        const PARTICLE_COUNT = 10000;
+        const MAX_RANGE = 200;
+        const DRAG = 0.98;
+        const REPEL_STRENGTH = 0.005;
+
+        // --- FPS Tracking ---
+        let lastTime = 0;
+        let fps = 0;
+        
+        // --- Control State ---
+        const controlsState = {
+            motion: true,
+            highFreq: true,
+            bass: true,
+            backgroundDark: true,
+            themeIndex: 0,
+            particleSize: 2,
+            controlsVisible: true 
+        };
+
+        const COLOR_THEMES = [
+            // [Initial HSL Hue, Initial Sat, Initial Light, High Freq Hue, High Freq Sat, High Freq Light]
+            { name: "Indigo/Pink", initial: [0.6, 0.8, 0.5], high: [0.95, 0.9, 0.7], initialColor: '#818cf8', highColor: '#fb7185' }, // Blue-ish to Pink/Red
+            { name: "Fire", initial: [0.1, 0.8, 0.5], high: [0.0, 1.0, 0.9], initialColor: '#f97316', highColor: '#fef3c7' },       // Orange to White/Yellow
+            { name: "Ocean", initial: [0.55, 0.9, 0.5], high: [0.35, 0.9, 0.8], initialColor: '#3b82f6', highColor: '#a7f3d0' },    // Deep Blue to Cyan/Green
+        ];
+
+        // --- Camera Controls ---
+        let cameraRadius = 150; 
+        const MIN_ZOOM = 50;
+        const MAX_ZOOM = 400;
+
+        let isDragging = false;
+        let previousMousePosition = { x: 0, y: 0 };
+        const rotateSpeed = 0.005;
+        let cameraAngle = { x: 0, y: 0 }; 
+        let initialTouchDistance = null; 
+
+        // --- Tone.js Setup ---
+        let fft, source, masterVolume; 
+        let isPlaying = false;
+        let noise, kick; 
+        let currentStartButtonText = 'Start Synthetic Beat';
+
+        const AUDIO_PARAMS = {
+            fftSize: 512, 
+            bassRange: [20, 150],
+            midRange: [150, 2000],
+            highRange: [2000, 10000]
+        };
+        let audioData = { bass: 0, mid: 0, high: 0 };
+        let customFileLoaded = false;
+        
+        /**
+         * Converts frequency range to FFT bin indices.
+         */
+        function freqToBin(startHz, endHz, sampleRate, fftSize) {
+            const binWidth = sampleRate / fftSize;
+            return [
+                Math.floor(startHz / binWidth),
+                Math.min(fftSize / 2 - 1, Math.ceil(endHz / binWidth))
+            ];
+        }
+
+        /**
+         * Initializes the Tone.js audio context, master volume, and FFT analyzer.
+         */
+        function initAudio() {
+            // Master Volume control node
+            masterVolume = new Tone.Volume(document.getElementById('volumeSlider').value).toDestination();
+
+            // Create the FFT analyzer and connect it
+            fft = new Tone.FFT(AUDIO_PARAMS.fftSize).connect(masterVolume);
+
+            // Setup synthetic fallback components
+            noise = new Tone.Noise("pink");
+            kick = new Tone.MembraneSynth();
+
+            // Define a simple looping beat for the fallback
+            Tone.Transport.scheduleRepeat(time => {
+                kick.triggerAttackRelease("C1", "8n", time);
+                noise.volume.setValueAtTime(Math.random() > 0.6 ? -15 : -10, time, 0.01);
+            }, "4n");
+            
+            Tone.Transport.bpm.value = 120;
+            
+            // Set default source to the combined synthetic sound
+            const synthMix = new Tone.Channel();
+            kick.connect(synthMix);
+            noise.connect(synthMix);
+            source = synthMix; 
+            
+            // Initial button text setup
+            document.getElementById('startButton').textContent = currentStartButtonText;
+        }
+
+        /**
+         * Loads and sets up the user's uploaded audio file.
+         */
+        function setupAudioFile(file) {
+            // Clean up existing source if it's a Tone.Player
+            if (source instanceof Tone.Player) {
+                if (source.state === 'started') source.stop();
+                source.dispose();
+            }
+
+            const url = URL.createObjectURL(file);
+            
+            const player = new Tone.Player(url, () => {
+                console.log("Audio file loaded successfully.");
+                document.getElementById('fileNameDisplay').textContent = `Loaded: ${file.name}`;
+            });
+            player.loop = true;
+            
+            source = player;
+            customFileLoaded = true;
+
+            currentStartButtonText = 'Visualize Uploaded Track';
+            document.getElementById('startButton').textContent = currentStartButtonText;
+        }
+
+        /**
+         * Analyzes the raw FFT data and aggregates energy into specific bands.
+         */
+        function analyzeAudio() {
+            if (!fft) return;
+
+            const spectrum = fft.getValue(); 
+            const numBins = spectrum.length;
+            const sampleRate = Tone.context.sampleRate;
+            
+            // Helper function to calculate average gain for a bin range
+            const avg = (arr, start, end) => {
+                let sum = 0;
+                for (let i = start; i < end; i++) {
+                    // Using Tone.dbToGain() to convert dB values (typical of FFT output) to linear gain (0-1)
+                    sum += Tone.dbToGain(spectrum[i]);
+                }
+                return sum / (end - start);
+            };
+
+            // Calculate bin indices for audio ranges
+            const [bStart, bEnd] = freqToBin(AUDIO_PARAMS.bassRange[0], AUDIO_PARAMS.bassRange[1], sampleRate, numBins * 2);
+            const [mStart, mEnd] = freqToBin(AUDIO_PARAMS.midRange[0], AUDIO_PARAMS.midRange[1], sampleRate, numBins * 2);
+            const [hStart, hEnd] = freqToBin(AUDIO_PARAMS.highRange[0], AUDIO_PARAMS.highRange[1], sampleRate, numBins * 2);
+
+            let bassEnergy = avg(spectrum, bStart, bEnd);
+            let midEnergy = avg(spectrum, mStart, mEnd);
+            let highEnergy = avg(spectrum, hStart, hEnd);
+
+            // Mapping and clamping for visualization scale
+            // These multipliers scale the energy to a usable visual range (0-10, 0-5, 0-3)
+            audioData.bass = Math.min(10, Math.max(0, bassEnergy * 5)); 
+            audioData.mid = Math.min(5, Math.max(0, midEnergy * 3));
+            audioData.high = Math.min(3, Math.max(0, highEnergy * 2));
+        }
+        
+        /**
+         * Initializes the Three.js scene, camera, and particle system.
+         */
+        function initScene() {
+            const container = document.getElementById('visualizer-container');
+
+            scene = new THREE.Scene();
+
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 1000);
+            camera.position.z = cameraRadius; 
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setClearColor(controlsState.backgroundDark ? 0x0d0e13 : 0xc0d7ff, 1);
+            container.appendChild(renderer.domElement);
+
+            geometry = new THREE.BufferGeometry();
+            
+            positions = new Float32Array(PARTICLE_COUNT * 3);
+            velocities = new Float32Array(PARTICLE_COUNT * 3);
+            colors = new Float32Array(PARTICLE_COUNT * 3);
+
+            // Initialize particle positions and colors
+            updateParticleInitialState(true); // Pass true to initialize position/velocity on first run
+            
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+            // Reverting the change: no custom texture map is used here. 
+            // THREE.js defaults to a square texture when 'map' is omitted.
+            material = new THREE.PointsMaterial({
+                size: controlsState.particleSize,
+                vertexColors: true,
+                transparent: true,
+                blending: THREE.AdditiveBlending,
+                sizeAttenuation: true,
+            });
+
+            particles = new THREE.Points(geometry, material);
+            scene.add(particles);
+
+            // --- Attach Control Listeners ---
+            window.addEventListener('resize', onWindowResize);
+            
+            renderer.domElement.addEventListener('mousedown', onPointerDown);
+            document.addEventListener('mouseup', onPointerUp);
+            document.addEventListener('mousemove', onPointerMove);
+            renderer.domElement.addEventListener('wheel', onMouseWheel);
+
+            // Mobile/Touch Support
+            renderer.domElement.addEventListener('touchstart', onPointerDown, { passive: false });
+            document.addEventListener('touchend', onPointerUp);
+            renderer.domElement.addEventListener('touchmove', onPointerMove, { passive: false });
+        }
+        
+        /**
+         * Resets or sets the initial state of particles (position and color).
+         */
+        function updateParticleInitialState(isFirstRun = false) {
+            const color = new THREE.Color();
+            const theme = COLOR_THEMES[controlsState.themeIndex];
+            
+            // Convert HSL components (0-1 range) for particles
+            const initialH = theme.initial[0];
+            const initialS = theme.initial[1];
+            const initialL = theme.initial[2];
+            
+            for (let i = 0; i < PARTICLE_COUNT; i++) {
+                const i3 = i * 3;
+                
+                // Set color based on current theme, adding randomness to lightness
+                color.setHSL(initialH + Math.random() * 0.1, initialS, initialL + Math.random() * 0.5);
+                colors[i3] = color.r;
+                colors[i3 + 1] = color.g;
+                colors[i3 + 2] = color.b;
+
+                if (isFirstRun) {
+                    // Initialize positions/velocities on first run
+                    positions[i3] = (Math.random() - 0.5) * MAX_RANGE * 0.1;
+                    positions[i3 + 1] = (Math.random() - 0.5) * MAX_RANGE * 0.1;
+                    positions[i3 + 2] = (Math.random() - 0.5) * MAX_RANGE * 0.1;
+
+                    velocities[i3] = (Math.random() - 0.5) * 0.1;
+                    velocities[i3 + 1] = (Math.random() - 0.5) * 0.1;
+                    velocities[i3 + 2] = (Math.random() - 0.5) * 0.1;
+                }
+            }
+            if (particles) {
+                particles.geometry.attributes.color.needsUpdate = true;
+            }
+        }
+
+
+        /**
+         * Handles window resizing for responsiveness.
+         */
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        /**
+         * Updates camera position based on user drag input (spherical coordinates).
+         */
+        function updateCameraControls() {
+            // Clamp vertical rotation to prevent flipping
+            cameraAngle.x = Math.max(-Math.PI / 2 + 0.01, Math.min(Math.PI / 2 - 0.01, cameraAngle.x));
+
+            const radius = cameraRadius; 
+            
+            // Convert spherical angles to Cartesian coordinates
+            camera.position.x = radius * Math.sin(cameraAngle.y) * Math.cos(cameraAngle.x);
+            camera.position.y = radius * Math.sin(cameraAngle.x);
+            camera.position.z = radius * Math.cos(cameraAngle.y) * Math.cos(cameraAngle.x);
+            
+            camera.lookAt(scene.position);
+        }
+
+        /**
+         * The core logic for particle "intelligence" and movement.
+         */
+        function updateParticles() {
+            const positionsArray = particles.geometry.attributes.position.array;
+            const colorArray = particles.geometry.attributes.color.array;
+            
+            const { bass, mid, high } = audioData;
+            const theme = COLOR_THEMES[controlsState.themeIndex];
+
+            // Apply size change from slider
+            material.size = controlsState.particleSize;
+            material.needsUpdate = true;
+
+            for (let i = 0; i < PARTICLE_COUNT; i++) {
+                const i3 = i * 3;
+
+                let x = positionsArray[i3];
+                let y = positionsArray[i3 + 1];
+                let z = positionsArray[i3 + 2];
+
+                let vx = velocities[i3];
+                let vy = velocities[i3 + 1];
+                let vz = velocities[i3 + 2];
+
+                if (controlsState.motion) {
+                    // 1. Central Repulsion / Cohesion
+                    const distance = Math.sqrt(x * x + y * y + z * z);
+                    let repelForce = REPEL_STRENGTH * (1 + bass * 0.5); 
+                    
+                    if (distance > MAX_RANGE * 0.8) {
+                        repelForce *= -0.5; // Pull back if too far (cohesion)
+                    }
+
+                    vx += x * repelForce;
+                    vy += y * repelForce;
+                    vz += z * repelForce;
+
+
+                    // 2. Music Reaction (Intelligence)
+                    
+                    // Bass reaction: Outward push/Explosion (Controlled by toggle)
+                    if (controlsState.bass && bass > 0.5) {
+                        if (i % 100 < bass * 50) { 
+                            vx += (x / distance) * bass * 0.5;
+                            vy += (y / distance) * bass * 0.5;
+                            vz += (z / distance) * bass * 0.5;
+                        }
+                    }
+
+                    // Mid reaction: Turbulence/Jitter 
+                    const jitter = (mid * 0.05) * (Math.random() - 0.5);
+                    vx += jitter;
+                    vy += jitter;
+                    vz += jitter;
+                    
+                    // High reaction: Speed and Color Pulse (Controlled by toggle)
+                    if (controlsState.highFreq) {
+                        if (high > 0.1) {
+                            // Increase velocity based on high frequency energy
+                            vx *= (1 + high * 0.01);
+                            vy *= (1 + high * 0.01);
+                            vz *= (1 + high * 0.01);
+
+                            // Change color towards the theme's 'high' color (simple color shift)
+                            colorArray[i3] = Math.min(1.0, colorArray[i3] + high * 0.02 * theme.high[0]);
+                            colorArray[i3 + 1] = Math.min(1.0, colorArray[i3 + 1] + high * 0.02 * theme.high[1]);
+                            colorArray[i3 + 2] = Math.max(0.2, colorArray[i3 + 2] - high * 0.01 * theme.high[2]);
+                        } else {
+                            // Fade back to initial color
+                            colorArray[i3] *= 0.995;
+                            colorArray[i3 + 1] *= 0.995;
+                            colorArray[i3 + 2] = Math.min(theme.initial[2] + 0.1, colorArray[i3 + 2] + 0.005);
+                        }
+                    }
+
+                    // 3. Update Position & Apply Drag
+                    vx *= DRAG;
+                    vy *= DRAG;
+                    vz *= DRAG;
+                    
+                    // Cap velocity
+                    const maxVel = 5;
+                    vx = Math.min(maxVel, Math.max(-maxVel, vx));
+                    vy = Math.min(maxVel, Math.max(-maxVel, vy));
+                    vz = Math.min(maxVel, Math.max(-maxVel, vz));
+
+                    positionsArray[i3] += vx;
+                    positionsArray[i3 + 1] += vy;
+                    positionsArray[i3 + 2] += vz;
+
+                    velocities[i3] = vx;
+                    velocities[i3 + 1] = vy;
+                    velocities[i3 + 2] = vz;
+                } else {
+                    // If motion is off, dampen velocity completely (particles settle)
+                    velocities[i3] *= 0.9;
+                    velocities[i3 + 1] *= 0.9;
+                    velocities[i3 + 2] *= 0.9;
+                    
+                    positionsArray[i3] += velocities[i3];
+                    positionsArray[i3 + 1] += velocities[i3 + 1];
+                    positionsArray[i3 + 2] += velocities[i3 + 2];
+                }
+            }
+
+            particles.geometry.attributes.position.needsUpdate = true;
+            particles.geometry.attributes.color.needsUpdate = true;
+        }
+
+        /**
+         * Updates the current time display in the status bar.
+         */
+        function updateTime() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+            document.getElementById('status-time').textContent = timeString;
+        }
+
+        /**
+         * Sets the visual status of the battery (circular ring and percentage text).
+         * @param {number} level - Battery percentage (0-100).
+         * @param {boolean} charging - True if the device is currently charging.
+         */
+        function setBatteryStatusUI(level, charging) {
+            const batteryIconSvg = document.getElementById('batteryIconRing');
+            const batteryText = document.getElementById('battery-level-text');
+            const fpsText = document.getElementById('status-fps');
+            const timeText = document.getElementById('status-time');
+            
+            batteryText.textContent = `${level}%`;
+
+            // Default colors
+            const darkColor = '#374151'; // Main text/ring color
+            const lowColor = '#ef4444'; // Red for low battery
+            const chargeColor = '#10b981'; // Green for charging
+            
+            const defaultTrackColor = darkColor; 
+
+            let ringColor = darkColor;
+            let centerFillColor = darkColor; 
+            let trackColor = defaultTrackColor; 
+            let trackOpacity = 0.25; 
+            let currentTextColor = darkColor; // Default color for all text
+
+            if (level < 20 && !charging) {
+                ringColor = lowColor; 
+                centerFillColor = lowColor;
+                currentTextColor = lowColor; // Set text color to low color
+                
+                // Highlight the whole track when battery is low and not charging
+                trackColor = lowColor;
+                trackOpacity = 0.15; 
+            } else if (charging) {
+                ringColor = chargeColor; 
+                centerFillColor = darkColor; 
+                currentTextColor = chargeColor; // Set text color to charge color
+                
+                trackColor = chargeColor; // Use charge color for track background when charging
+                trackOpacity = 0.15; 
+            } else {
+                currentTextColor = darkColor; // Set text color to default dark color
+            }
+            
+            // APPLY DYNAMIC COLOR TO ALL TEXT ELEMENTS
+            batteryText.style.color = currentTextColor;
+            fpsText.style.color = currentTextColor;
+            timeText.style.color = currentTextColor;
+            
+            // --- Dynamic Circular SVG Update ---
+            const radius = 10;
+            const circumference = 2 * Math.PI * radius;
+            // Stroke offset is the amount of the circumference NOT filled
+            const strokeOffset = circumference * (1 - level / 100);
+
+            // Base SVG paths (Centered at 12, 12 in the 24x24 viewBox)
+            
+            // 1. Background circle (subtle track) - Now uses a darker color with controlled opacity
+            const backgroundCircle = `<circle r="${radius}" cx="12" cy="12" stroke="${trackColor}" stroke-opacity="${trackOpacity}" stroke-width="3" fill="none" />`;
+
+            // 2. Foreground arc (the battery level)
+            // stroke-dasharray is the total length, stroke-dashoffset hides the unfilled part
+            const foregroundArc = `<circle r="${radius}" cx="12" cy="12" stroke="${ringColor}" stroke-width="3" fill="none" stroke-linecap="round" 
+                                   stroke-dasharray="${circumference}" stroke-dashoffset="${strokeOffset}" 
+                                   style="transition: stroke-dashoffset 0.5s ease-out; transform: rotate(-90deg); transform-origin: 50% 50%;" />`;
+            
+            let centerElement = '';
+            
+            // Center icon (Dot)
+            centerElement = `<circle r="${level <= 10 ? 2 : 1.5}" cx="12" cy="12" fill="${centerFillColor}" />`;
+
+
+            batteryIconSvg.innerHTML = backgroundCircle + foregroundArc + centerElement;
+        }
+
+        /**
+         * Fetches the real device battery status and sets up listeners for changes.
+         * Falls back to a default if the API is unsupported/blocked.
+         */
+        async function fetchAndSetBatteryStatus() {
+            try {
+                if (!navigator.getBattery) {
+                    console.error("Battery Status API not supported. Falling back to default.");
+                    setBatteryStatusUI(64, false); // Default to a reasonable number
+                    return;
+                }
+
+                const battery = await navigator.getBattery();
+                
+                // Initial update
+                let level = Math.round(battery.level * 100);
+                let charging = battery.charging;
+                setBatteryStatusUI(level, charging);
+                
+                // Add listeners for real-time updates
+                battery.addEventListener('levelchange', () => {
+                    level = Math.round(battery.level * 100);
+                    setBatteryStatusUI(level, battery.charging);
+                });
+                battery.addEventListener('chargingchange', () => {
+                    charging = battery.charging;
+                    setBatteryStatusUI(Math.round(battery.level * 100), charging);
+                });
+                
+            } catch (e) {
+                // If the API call is denied or fails
+                console.error("Could not access Battery Status API:", e);
+                setBatteryStatusUI(64, false); // Fallback on error
+            }
+        }
+
+
+        /**
+         * Toggles the visibility of the control panel and updates the toggle button icon.
+         */
+        function toggleControlPanel() {
+            const overlay = document.getElementById('controls-overlay');
+            const icon = document.getElementById('toggleIcon');
+            
+            controlsState.controlsVisible = !controlsState.controlsVisible;
+
+            if (controlsState.controlsVisible) {
+                overlay.classList.remove('hidden-controls');
+                // Icon for 'Controls Visible' (Chevrons Up)
+                icon.innerHTML = '<polyline points="6 9 12 15 18 9"></polyline>';
+            } else {
+                overlay.classList.add('hidden-controls');
+                // Icon for 'Controls Hidden' (Chevrons Down)
+                icon.innerHTML = '<polyline points="18 15 12 9 6 15"></polyline>';
+            }
+        }
+
+        /**
+         * Main animation loop.
+         */
+        function animate(currentTime) {
+            requestAnimationFrame(animate);
+
+            // FPS Calculation
+            const delta = currentTime - lastTime;
+            lastTime = currentTime;
+            if (delta > 0) {
+                fps = Math.round(1000 / delta);
+                document.getElementById('status-fps').textContent = `FPS: ${fps}`;
+            }
+
+            if (isPlaying) {
+                analyzeAudio();
+                updateParticles();
+            }
+            
+            updateCameraControls(); // Apply user input controls
+            renderer.render(scene, camera);
+        }
+
+        // --- Camera Control Handlers (Rotation and Zoom) ---
+
+        function onMouseWheel(event) {
+            event.preventDefault();
+            const zoomSpeed = 0.5; 
+            cameraRadius += event.deltaY * zoomSpeed;
+
+            cameraRadius = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, cameraRadius));
+        }
+
+        function getTouchDistance(touches) {
+            if (touches.length < 2) return 0;
+            const dx = touches[0].clientX - touches[1].clientX;
+            const dy = touches[0].clientY - touches[1].clientY;
+            return Math.sqrt(dx * dx + dy * dy);
+        }
+
+        function onPointerDown(event) {
+            if (event.target !== renderer.domElement) return;
+
+            if (event.touches && event.touches.length === 2) {
+                initialTouchDistance = getTouchDistance(event.touches);
+                isDragging = false; 
+                event.preventDefault(); 
+            } else if (event.touches && event.touches.length === 1) {
+                isDragging = true;
+                previousMousePosition.x = event.touches[0].clientX;
+                previousMousePosition.y = event.touches[0].clientY;
+                event.preventDefault(); 
+            } else if (!event.touches) {
+                isDragging = true;
+                previousMousePosition.x = event.clientX;
+                previousMousePosition.y = event.clientY;
+            }
+            renderer.domElement.classList.add('grabbing');
+        }
+
+        function onPointerUp(event) {
+            isDragging = false;
+            renderer.domElement.classList.remove('grabbing');
+            initialTouchDistance = null; 
+        }
+
+        function onPointerMove(event) {
+            if (event.touches && event.touches.length === 2) {
+                // Handle Pinch Zoom
+                const currentDistance = getTouchDistance(event.touches);
+
+                if (initialTouchDistance !== null && currentDistance !== 0) {
+                    const deltaDistance = currentDistance - initialTouchDistance;
+                    const zoomSpeed = 0.5; 
+                    cameraRadius -= deltaDistance * zoomSpeed; 
+
+                    cameraRadius = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, cameraRadius));
+                    
+                    initialTouchDistance = currentDistance;
+                }
+                event.preventDefault();
+                return;
+            }
+            
+            // Handle Rotation Drag (Mouse or Single Touch)
+            if (!isDragging || event.touches?.length > 1) return; 
+            
+            const clientX = event.clientX || event.touches[0].clientX;
+            const clientY = event.clientY || event.touches[0].clientY;
+            
+            const deltaMove = {
+                x: clientX - previousMousePosition.x,
+                y: clientY - previousMousePosition.y
+            };
+
+            cameraAngle.y += deltaMove.x * rotateSpeed; 
+            cameraAngle.x += deltaMove.y * rotateSpeed; 
+
+            previousMousePosition.x = clientX;
+            previousMousePosition.y = clientY;
+            
+            if (event.touches) {
+                event.preventDefault();
+            }
+        }
+        
+        // --- Control Panel Handlers ---
+
+        /**
+         * Toggles the visual state (icon background and status text) of a quick setting.
+         */
+        function toggleIcon(id, state) {
+            const icon = document.getElementById(`icon${id}`);
+            const status = document.getElementById(`status${id}`);
+
+            if (state) {
+                icon.classList.remove('inactive-icon', 'text-red-500', 'text-gray-600');
+                icon.classList.add('active-icon');
+                status.textContent = status.getAttribute('data-active-text');
+                status.classList.remove('text-red-500', 'text-gray-600');
+                status.classList.add('text-green-600');
+            } else {
+                icon.classList.remove('active-icon');
+                icon.classList.add('inactive-icon', 'text-red-500');
+                status.textContent = status.getAttribute('data-inactive-text');
+                status.classList.remove('text-green-600');
+                status.classList.add('text-red-500');
+            }
+        }
+        
+        // Initialize status text attributes
+        document.getElementById('statusMotion').setAttribute('data-active-text', 'Active');
+        document.getElementById('statusMotion').setAttribute('data-inactive-text', 'Frozen');
+        document.getElementById('statusHighFreq').setAttribute('data-active-text', 'Pulse ON');
+        document.getElementById('statusHighFreq').setAttribute('data-inactive-text', 'Pulse OFF');
+        document.getElementById('statusBass').setAttribute('data-active-text', 'Active');
+        document.getElementById('statusBass').setAttribute('data-inactive-text', 'Dampened');
+        document.getElementById('statusBackground').setAttribute('data-active-text', 'ON (Light)');
+        document.getElementById('statusBackground').setAttribute('data-inactive-text', 'OFF (Dark)');
+        
+        // Initial setup for the background icon (which starts inactive/dark)
+        // Ensure initial state matches HTML structure for Night Mode (Dark mode)
+        document.getElementById('iconBackground').classList.remove('active-icon', 'text-yellow-600');
+        document.getElementById('iconBackground').classList.add('inactive-icon', 'text-gray-600');
+        document.getElementById('statusBackground').classList.remove('text-green-600');
+        document.getElementById('statusBackground').classList.add('text-gray-600');
+        document.getElementById('statusBackground').textContent = 'OFF (Dark)';
+
+
+        document.getElementById('toggleMotion').addEventListener('click', () => {
+            controlsState.motion = !controlsState.motion;
+            toggleIcon('Motion', controlsState.motion);
+        });
+
+        document.getElementById('toggleHighFreq').addEventListener('click', () => {
+            controlsState.highFreq = !controlsState.highFreq;
+            toggleIcon('HighFreq', controlsState.highFreq);
+        });
+
+        document.getElementById('toggleBass').addEventListener('click', () => {
+            controlsState.bass = !controlsState.bass;
+            toggleIcon('Bass', controlsState.bass);
+        });
+        
+        document.getElementById('toggleBackground').addEventListener('click', () => {
+            controlsState.backgroundDark = !controlsState.backgroundDark;
+            
+            // Manually handle the background toggle styling since its active state means 'light' mode
+            const icon = document.getElementById('iconBackground');
+            const status = document.getElementById('statusBackground');
+            
+            if (controlsState.backgroundDark) {
+                // Dark background is ON (Night Mode OFF in label)
+                icon.classList.remove('active-icon', 'text-yellow-600');
+                icon.classList.add('inactive-icon', 'text-gray-600');
+                status.textContent = status.getAttribute('data-inactive-text');
+                status.classList.remove('text-green-600');
+                status.classList.add('text-gray-600');
+                renderer.setClearColor(0x0d0e13, 1);
+            } else {
+                // Light background is ON (Night Mode ON in label)
+                icon.classList.remove('inactive-icon', 'text-gray-600');
+                icon.classList.add('active-icon', 'text-yellow-600'); // Use yellow for sun/light icon when active
+                status.textContent = status.getAttribute('data-active-text');
+                status.classList.remove('text-gray-600');
+                status.classList.add('text-green-600');
+                renderer.setClearColor(0xc0d7ff, 1);
+            }
+        });
+
+        document.getElementById('cycleTheme').addEventListener('click', () => {
+            controlsState.themeIndex = (controlsState.themeIndex + 1) % COLOR_THEMES.length;
+            const theme = COLOR_THEMES[controlsState.themeIndex];
+            
+            document.getElementById('statusTheme').textContent = theme.name;
+            document.getElementById('iconTheme').style.color = theme.initialColor;
+            
+            // Re-colorize all particles instantly
+            updateParticleInitialState();
+        });
+
+        document.getElementById('volumeSlider').addEventListener('input', (event) => {
+            if (masterVolume) {
+                masterVolume.volume.value = parseFloat(event.target.value);
+            }
+        });
+        
+        document.getElementById('sizeSlider').addEventListener('input', (event) => {
+            controlsState.particleSize = parseFloat(event.target.value);
+        });
+
+
+        // --- Audio/Start Event Listeners ---
+        document.getElementById('audioFile').addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            const startButton = document.getElementById('startButton');
+
+            if (file) {
+                setupAudioFile(file);
+                startButton.textContent = 'Visualize Uploaded Track';
+            } else {
+                customFileLoaded = false;
+                // Revert to initial synthetic beat source if file is removed
+                // Re-initialize source (must be done in startButton handler)
+                document.getElementById('fileNameDisplay').textContent = 'Tap to Upload Music (.mp3, .wav, etc.)';
+                startButton.textContent = 'Start Synthetic Beat';
+            }
+        });
+
+        document.getElementById('startButton').addEventListener('click', async () => {
+            if (isPlaying) return;
+
+            const startButton = document.getElementById('startButton');
+
+            // Start Tone.js context (required for all audio interaction)
+            await Tone.start();
+            console.log("Audio context started.");
+
+            // Connect the source (either file player or synthetic mix) to the FFT analyzer
+            source.connect(fft); 
+
+            if (customFileLoaded && source instanceof Tone.Player) {
+                // Play uploaded file
+                source.start(0); 
+                startButton.textContent = 'Visualizing Music...';
+            } else {
+                // Play synthetic beat (default fallback)
+                noise.start();
+                kick.toDestination(); 
+                Tone.Transport.start();
+                startButton.textContent = 'Visualizing Beat...';
+            }
+
+            isPlaying = true;
+
+            // Hide the control panel gracefully
+            document.getElementById('controls-overlay').classList.add('hidden-controls');
+            controlsState.controlsVisible = false; // Update state
+            document.getElementById('toggleIcon').innerHTML = '<polyline points="18 15 12 9 6 15"></polyline>'; // Set icon to UP
+        });
+
+        // Add event listener for the new toggle button
+        document.getElementById('toggleControlsButton').addEventListener('click', toggleControlPanel);
+
+        // Initialize scene and audio components
+        window.onload = function() {
+            initScene();
+            initAudio();
+            
+            // Start status bar updates
+            updateTime();
+            fetchAndSetBatteryStatus(); // Use the new function to fetch real battery status and set up listeners
+            setInterval(updateTime, 1000); 
+            
+
+            animate(0); // Pass initial time 0 to animate
+            
+            // Initial icon setup to match initial state (controlsVisible: true)
+            document.getElementById('toggleIcon').innerHTML = '<polyline points="6 9 12 15 18 9"></polyline>';
+        };
+    </script>
+</body>
+</html>
