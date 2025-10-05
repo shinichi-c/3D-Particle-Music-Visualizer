@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="viewport-fit=cover, width=device-width, initial-scale=1.0">
+    <title>3D Particle Master Control</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
+    <style>
+        /* Custom CSS to match the Control Panel screenshot style */
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: #0d0e13; 
+            cursor: default; /* Start with default cursor */
+        }
+        #visualizer-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 0;
+        }
+        #controls-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            transition: opacity 0.5s ease-in-out, visibility 0.5s;
+        }
+        #controls {
+            width: 90vw;
+            max-width: 400px;
+            /* Solid white background */
+            background: #ffffff; 
+            border-radius: 20px;
+            /* Neumorphic Shadow: Only dark shadow remains for lift */
+            box-shadow: 
+                0px 8px 30px rgba(0, 0, 0, 0.6);       
+            padding: 1rem;
+            color: #333;
+        }
+
+        .hidden-controls {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .quick-setting-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 0.5rem 0.25rem;
+            cursor: pointer;
+            border-radius: 12px;
+            transition: background 0.2s;
+        }
+        .quick-setting-item:hover {
+            background: rgba(0, 0, 0, 0.05);
+        }
+
+        .quick-setting-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 0.25rem;
+            transition: background 0.2s, transform 0.1s;
+        }
+        .quick-setting-icon:active {
+            transform: scale(0.95);
+        }
+
+        /* Active state styles */
+        .active-icon {
+            background: #4f46e5;
+            color: white;
+        }
+        .inactive-icon {
+            background: rgba(0, 0, 0, 0.1);
+            color: #4f46e5;
+        }
+        
+        /* UPDATED START BUTTON STYLING */
+        .control-button {
+            width: 100%;
+            padding: 0.85rem; /* Slightly taller */
+            font-size: 1rem;
+            font-weight: 700; /* Bolder text */
+            color: #ffffff;
+            background: linear-gradient(135deg, #4f46e5, #6366f1);
+            border: none;
+            border-radius: 10px; /* Slightly more rounded */
+            cursor: pointer;
+            box-shadow: 0 6px 15px rgba(79, 70, 229, 0.5); /* Stronger initial shadow */
+            transition: all 0.2s ease;
+        }
+        .control-button:hover {
+            background: linear-gradient(135deg, #6366f1, #818cf8);
+            box-shadow: 0 8px 20px rgba(79, 70, 229, 0.7);
+            transform: translateY(-2px); /* Lighter lift */
+        }
+        .control-button:active {
+            transform: translateY(1px); /* New press effect */
+            box-shadow: 0 2px 5px rgba(79, 70, 229, 0.4);
+        }
+        
+        /* New Range Slider Styling for a Fresh Look */
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px; /* Slightly thinner track */
+            background: rgba(0, 0, 0, 0.1); /* Very light, subtle track */
+            border-radius: 3px;
+            outline: none;
+            cursor: pointer;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px; /* Slightly smaller thumb */
+            height: 18px;
+            border-radius: 50%;
+            background: #4f46e5; /* Bold Indigo */
+            cursor: pointer;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3); /* Clean lift effect */
+            transition: background 0.1s;
+        }
+        input[type="range"]::-webkit-slider-thumb:hover {
+            background: #3730a3; /* Darker on hover */
+        }
+
+
+        /* Styling for the canvas cursor when interactive */
+        #visualizer-container canvas {
+            cursor: grab;
+        }
+        #visualizer-container canvas.grabbing {
+            cursor: grabbing;
+        }
+        
+        /* Styling for the hidden file input */
+        #audioFile {
+            display: none;
+        }
+
+        /* UPDATED FILE UPLOAD BUTTON STYLING (Ghost Button) */
+        .file-input-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem; /* Space between icon and text */
+            width: 100%;
+            padding: 0.85rem 1rem;
+            background-color: transparent; /* Ghost style */
+            border: 2px solid #6366f1; /* Primary color border */
+            border-radius: 10px; 
+            cursor: pointer;
+            font-weight: 600;
+            color: #4f46e5;
+            transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+        }
+        .file-input-label:hover {
+            background-color: #eef2ff; /* Very light background on hover */
+            color: #3730a3; /* Darker text on hover */
+            border-color: #3730a3;
+        }
+        
+        /* Central toggle button style */
+        #toggleControlsButton {
+            position: absolute;
+            top: -24px; 
+            left: 50%;
+            transform: translateX(-50%);
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: #e0e0e0; 
+            border: 4px solid rgba(220, 230, 240, 0.9); 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 
+                0 4px 15px rgba(0, 0, 0, 0.5); 
+            transition: transform 0.2s, background 0.2s;
+        }
+        #toggleControlsButton:hover {
+            background: #dadada;
+        }
+        #toggleControlsButton svg {
+            color: #4f46e5; 
+            width: 24px;
+            height: 24px;
+            transition: transform 0.3s;
+        }
+
+        /* CHROME OS STYLE STATUS BAR */
+        #status-bar {
+            /* Keep status bar slightly translucent */
+            background: rgba(220, 230, 240, 0.9); 
+            color: #374151; 
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 24px 24px 0 0; 
+            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3); 
+            position: fixed;
+            bottom: 0; 
+            left: 0; 
+            right: 0; 
+            width: 100%; 
+            height: 56px; 
+            padding: 0 1.5rem; 
+            display: flex;
+            justify-content: space-between; 
+            align-items: center;
+            font-size: 0.9rem; 
+            font-weight: 500;
+            z-index: 20; 
+        }
+
+        /* Battery Status styles */
+        .status-text {
+            /* REMOVED fixed color: #6b7280; -> Color is now set dynamically by JS to match battery text color */
+            font-weight: 500;
+            font-size: 0.9rem; 
+            transition: color 0.3s ease; /* Added transition for smooth color change */
+        }
+        #battery-status {
+            display: flex;
+            align-items: center;
+            padding: 0.3rem 0.6rem;
+            border-radius: 8px;
+            cursor: default; 
+            transition: background 0.2s;
+        }
+        .battery-icon-ring {
+            width: 28px; 
+            height: 28px; 
+            margin-right: 0.5rem; 
+            display: block; 
+        }
+        #battery-level-text {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: #374151; /* Initial color */
+            line-height: 1; 
+            transition: color 0.3s ease; /* Added transition for smooth color change */
+        }
+        /* Custom Header accent */
+        #controls-header {
+            /* Added subtle purple border for a premium touch */
+            border-bottom: 4px solid #6366f1;
+            border-radius: 0 0 4px 4px;
+            padding-bottom: 1rem;
+            margin-bottom: 1rem;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="visualizer-container"></div>
+
+    <div id="controls-overlay">
+        <div id="controls">
+            <!-- HEADER ROW (Now wrapped in #controls-header) -->
+            <div id="controls-header" class="flex justify-between items-center">
+                <div class="flex items-center space-x-2">
+                    <img src="https://placehold.co/36x36/4f46e5/ffffff?text=3D" class="w-9 h-9 rounded-full"/>
+                    <span class="font-semibold text-lg">Visualizer Controls</span>
+                </div>
+            </div>
+
+            <!-- QUICK SETTINGS GRID -->
+            <div class="grid grid-cols-3 gap-y-3 mb-6 text-sm">
+                
+                <!-- 1. Particle Motion Toggle (Functional) -->
+                <div class="quick-setting-item" id="toggleMotion">
+                    <div class="quick-setting-icon active-icon" id="iconMotion">
+                        <!-- NEW ICON: Sine Wave for Motion -->
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12a2.49 2.49 0 0 1 2.5-2.5c2.5 0 2.5 5 5 5s2.5-5 5-5 2.5 5 5 5 2.5-2.5 2.5-2.5"/></svg>
+                    </div>
+                    <span class="font-medium text-gray-800">Motion</span>
+                    <span class="text-xs text-green-600 font-semibold" id="statusMotion">Active</span>
+                </div>
+
+                <!-- 2. High Freq Pulse Toggle (Functional) -->
+                <div class="quick-setting-item" id="toggleHighFreq">
+                    <div class="quick-setting-icon active-icon" id="iconHighFreq">
+                        <!-- NEW ICON: Clean Lightning Bolt for High Freq Pulse -->
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2l-3 8h5l-6 12l2-8h-5z"/></svg>
+                    </div>
+                    <span class="font-medium text-gray-800">High Freq</span>
+                    <span class="text-xs text-green-600 font-semibold" id="statusHighFreq">Pulse ON</span>
+                </div>
+
+                <!-- 3. Bass Reaction Toggle (Functional) -->
+                <div class="quick-setting-item" id="toggleBass">
+                    <div class="quick-setting-icon active-icon" id="iconBass">
+                        <!-- NEW ICON: Speaker with Sound Waves for Bass -->
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 8a5 5 0 0 1 0 8"/><path d="M17.66 6.34a9 9 0 0 1 0 11.32"/><path d="M2 10h3l5-5v14l-5-5H2z"/></svg>
+                    </div>
+                    <span class="font-medium text-gray-800">Bass React</span>
+                    <span class="text-xs text-green-600 font-semibold" id="statusBass">Active</span>
+                </div>
+
+                <!-- 4. Color Theme Cycle (Functional) -->
+                <div class="quick-setting-item" id="cycleTheme">
+                    <div class="quick-setting-icon inactive-icon text-indigo-500" id="iconTheme">
+                        <!-- NEW ICON: Color Palette for Theme -->
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 7c-4.4 0-8 3.6-8 8s3.6 8 8 8c3 0 5.6-1.7 6.9-4.2M12 7V4M12 21v-3"/><path d="M12 7a8 8 0 0 1 8 8c0 3-1.7 5.6-4.2 6.9"/><path d="M12 7a8 8 0 0 0-8 8c0 3 1.7 5.6 4.2 6.9"/></svg>
+                    </div>
+                    <span class="font-medium text-gray-800">Theme</span>
+                    <span class="text-xs text-gray-600 font-semibold" id="statusTheme">Indigo/Pink</span>
+                </div>
+
+                <!-- 5. Background Mode Toggle (Functional) -->
+                <div class="quick-setting-item" id="toggleBackground">
+                    <div class="quick-setting-icon inactive-icon text-gray-600" id="iconBackground">
+                        <!-- NEW ICON: Simple Sun/Moon for Background -->
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+                    </div>
+                    <span class="font-medium text-gray-800">Night Mode</span>
+                    <span class="text-xs text-gray-600 font-semibold" id="statusBackground">OFF (Dark)</span>
+                </div>
+                
+            </div>
+
+            <!-- SLIDERS -->
+            <div class="space-y-4 mb-6 pt-4 border-t border-gray-300">
+                <div class="flex items-center space-x-3">
+                    <!-- Volume Icon -->
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-gray-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 8a5 5 0 0 1 0 8"/><path d="M17.66 6.34a9 9 0 0 1 0 11.32"/><path d="M2 10h3l5-5v14l-5-5H2z"/></svg>
+                    <input type="range" min="-30" max="0" value="-6" step="1" id="volumeSlider" class="flex-grow">
+                    <span class="text-sm font-semibold text-gray-700 w-8 text-right">Vol</span>
+                </div>
+
+                <div class="flex items-center space-x-3">
+                    <!-- Particle Size Icon (Target) -->
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-gray-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M20 12h2M2 12h2"/></svg>
+                    <input type="range" min="1" max="5" value="2" step="0.1" id="sizeSlider" class="flex-grow">
+                    <span class="text-sm font-semibold text-gray-700 w-8 text-right">Size</span>
+                </div>
+            </div>
+
+
+            <!-- FILE UPLOAD AND START BUTTON -->
+            <div class="space-y-4">
+                <label for="audioFile" class="file-input-label">
+                    <!-- New Upload Icon -->
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+                    <span id="fileNameDisplay" class="text-sm">Tap to Upload Music (.mp3, .wav, etc.)</span>
+                </label>
+                <input type="file" accept="audio/*" id="audioFile">
+                
+                <button id="startButton" class="control-button">
+                    Start Synthetic Beat
+                </button>
+            </div>
+            
+            <div class="text-center text-xs mt-3 text-gray-500">
+                Tap the screen to rotate and pinch/scroll to zoom.
+            </div>
+        </div>
+    </div>
+    
+    <!-- STATUS BAR (Fixed at Bottom) -->
+    <div id="status-bar">
+        
+        <!-- Toggle Control Button (NEW) -->
+        <button id="toggleControlsButton" aria-label="Toggle Control Panel">
+            <svg id="toggleIcon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <!-- Icon for 'Controls Hidden' (Chevrons Up) -->
+                <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+        </button>
+        <!-- End Toggle Control Button -->
+
+        <!-- LEFT SIDE: Battery Status only -->
+        <div id="status-left">
+            <!-- Battery Status - CIRCULAR Icon with Percentage -->
+            <div id="battery-status">
+                <!-- New Circular Battery Icon Container -->
+                <svg id="batteryIconRing" class="battery-icon-ring" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <!-- SVG contents will be dynamically generated by JS -->
+                </svg>
+                <span id="battery-level-text">--%</span>
+            </div>
+        </div>
+
+        <!-- RIGHT SIDE: FPS and Time -->
+        <div class="flex space-x-4">
+            <span id="status-fps" class="status-text">FPS: --</span>
+            <span id="status-time" class="status-text">--:--:--</span>
+        </div>
+    </div>
+    <!-- END STATUS BAR -->
+
+    <script>
+        // Global variables for Firebase access (required by the environment, though not used here)
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        // --- Three.js Setup ---
+        let scene, camera, renderer, particles, geometry, material;
+        let positions, velocities, colors;
+        const PARTICLE_COUNT = 10000;
+        const MAX_RANGE = 200;
+        const DRAG = 0.98;
+        const REPEL_STRENGTH = 0.005;
+
+        // --- FPS Tracking ---
+        let lastTime = 0;
+        let fps = 0;
+        
+        // --- Control State ---
+        const controlsState = {
+            motion: true,
+            highFreq: true,
+            bass: true,
+            backgroundDark: true,
+            themeIndex: 0,
+            particleSize: 2,
+            controlsVisible: true 
+        };
+
+        const COLOR_THEMES = [
+            // [Initial HSL Hue, Initial Sat, Initial Light, High Freq Hue, High Freq Sat, High Freq Light]
+            { name: "Indigo/Pink", initial: [0.6, 0.8, 0.5], high: [0.95, 0.9, 0.7], initialColor: '#818cf8', highColor: '#fb7185' }, // Blue-ish to Pink/Red
+            { name: "Fire", initial: [0.1, 0.8, 0.5], high: [0.0, 1.0, 0.9], initialColor: '#f97316', highColor: '#fef3c7' },       // Orange to White/Yellow
+            { name: "Ocean", initial: [0.55, 0.9, 0.5], high: [0.35, 0.9, 0.8], initialColor: '#3b82f6', highColor: '#a7f3d0' },    // Deep Blue to Cyan/Green
+        ];
+
+        // --- Camera Controls ---
+        let cameraRadius = 150; 
+        const MIN_ZOOM = 50;
+        const MAX_ZOOM = 400;
+
+        let isDragging = false;
+        let previousMousePosition = { x: 0, y: 0 };
+        const rotateSpeed = 0.005;
+        let cameraAngle = { x: 0, y: 0 }; 
+        let initialTouchDistance = null; 
+
+        // --- Tone.js Setup ---
+        let fft, source, masterVolume; 
+        let isPlaying = false;
+ 
