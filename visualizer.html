@@ -192,7 +192,7 @@
             height: 48px;
             border-radius: 50%;
             background: #e0e0e0; 
-            border: 4px solid rgba(220, 230, 240, 0.9); 
+            border: 4px solid rgba(255, 255, 255, 1.0); /* Border matches the new status bar color */
             display: flex;
             align-items: center;
             justify-content: center;
@@ -213,8 +213,8 @@
 
         /* CHROME OS STYLE STATUS BAR */
         #status-bar {
-            /* Keep status bar slightly translucent */
-            background: rgba(220, 230, 240, 0.9); 
+            /* CHANGED: Set to solid white background with full opacity (1.0) */
+            background: rgba(255, 255, 255, 1.0); 
             color: #374151; 
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
@@ -280,7 +280,6 @@
 
     <div id="controls-overlay">
         <div id="controls">
-            <!-- HEADER ROW (Now wrapped in #controls-header) -->
             <div id="controls-header" class="flex justify-between items-center">
                 <div class="flex items-center space-x-2">
                     <img src="https://placehold.co/36x36/4f46e5/ffffff?text=3D" class="w-9 h-9 rounded-full"/>
@@ -288,53 +287,42 @@
                 </div>
             </div>
 
-            <!-- QUICK SETTINGS GRID -->
             <div class="grid grid-cols-3 gap-y-3 mb-6 text-sm">
                 
-                <!-- 1. Particle Motion Toggle (Functional) -->
                 <div class="quick-setting-item" id="toggleMotion">
                     <div class="quick-setting-icon active-icon" id="iconMotion">
-                        <!-- NEW ICON: Sine Wave for Motion -->
                         <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12a2.49 2.49 0 0 1 2.5-2.5c2.5 0 2.5 5 5 5s2.5-5 5-5 2.5 5 5 5 2.5-2.5 2.5-2.5"/></svg>
                     </div>
                     <span class="font-medium text-gray-800">Motion</span>
                     <span class="text-xs text-green-600 font-semibold" id="statusMotion">Active</span>
                 </div>
 
-                <!-- 2. High Freq Pulse Toggle (Functional) -->
                 <div class="quick-setting-item" id="toggleHighFreq">
                     <div class="quick-setting-icon active-icon" id="iconHighFreq">
-                        <!-- NEW ICON: Clean Lightning Bolt for High Freq Pulse -->
                         <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2l-3 8h5l-6 12l2-8h-5z"/></svg>
                     </div>
                     <span class="font-medium text-gray-800">High Freq</span>
                     <span class="text-xs text-green-600 font-semibold" id="statusHighFreq">Pulse ON</span>
                 </div>
 
-                <!-- 3. Bass Reaction Toggle (Functional) -->
                 <div class="quick-setting-item" id="toggleBass">
                     <div class="quick-setting-icon active-icon" id="iconBass">
-                        <!-- NEW ICON: Speaker with Sound Waves for Bass -->
                         <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 8a5 5 0 0 1 0 8"/><path d="M17.66 6.34a9 9 0 0 1 0 11.32"/><path d="M2 10h3l5-5v14l-5-5H2z"/></svg>
                     </div>
                     <span class="font-medium text-gray-800">Bass React</span>
                     <span class="text-xs text-green-600 font-semibold" id="statusBass">Active</span>
                 </div>
 
-                <!-- 4. Color Theme Cycle (Functional) -->
                 <div class="quick-setting-item" id="cycleTheme">
                     <div class="quick-setting-icon inactive-icon text-indigo-500" id="iconTheme">
-                        <!-- NEW ICON: Color Palette for Theme -->
                         <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 7c-4.4 0-8 3.6-8 8s3.6 8 8 8c3 0 5.6-1.7 6.9-4.2M12 7V4M12 21v-3"/><path d="M12 7a8 8 0 0 1 8 8c0 3-1.7 5.6-4.2 6.9"/><path d="M12 7a8 8 0 0 0-8 8c0 3 1.7 5.6 4.2 6.9"/></svg>
                     </div>
                     <span class="font-medium text-gray-800">Theme</span>
                     <span class="text-xs text-gray-600 font-semibold" id="statusTheme">Indigo/Pink</span>
                 </div>
 
-                <!-- 5. Background Mode Toggle (Functional) -->
                 <div class="quick-setting-item" id="toggleBackground">
                     <div class="quick-setting-icon inactive-icon text-gray-600" id="iconBackground">
-                        <!-- NEW ICON: Simple Sun/Moon for Background -->
                         <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
                     </div>
                     <span class="font-medium text-gray-800">Night Mode</span>
@@ -343,17 +331,14 @@
                 
             </div>
 
-            <!-- SLIDERS -->
             <div class="space-y-4 mb-6 pt-4 border-t border-gray-300">
                 <div class="flex items-center space-x-3">
-                    <!-- Volume Icon -->
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-gray-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 8a5 5 0 0 1 0 8"/><path d="M17.66 6.34a9 9 0 0 1 0 11.32"/><path d="M2 10h3l5-5v14l-5-5H2z"/></svg>
                     <input type="range" min="-30" max="0" value="-6" step="1" id="volumeSlider" class="flex-grow">
                     <span class="text-sm font-semibold text-gray-700 w-8 text-right">Vol</span>
                 </div>
 
                 <div class="flex items-center space-x-3">
-                    <!-- Particle Size Icon (Target) -->
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-gray-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M20 12h2M2 12h2"/></svg>
                     <input type="range" min="1" max="5" value="2" step="0.1" id="sizeSlider" class="flex-grow">
                     <span class="text-sm font-semibold text-gray-700 w-8 text-right">Size</span>
@@ -361,10 +346,8 @@
             </div>
 
 
-            <!-- FILE UPLOAD AND START BUTTON -->
             <div class="space-y-4">
                 <label for="audioFile" class="file-input-label">
-                    <!-- New Upload Icon -->
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
                     <span id="fileNameDisplay" class="text-sm">Tap to Upload Music (.mp3, .wav, etc.)</span>
                 </label>
@@ -381,38 +364,26 @@
         </div>
     </div>
     
-    <!-- STATUS BAR (Fixed at Bottom) -->
     <div id="status-bar">
         
-        <!-- Toggle Control Button (NEW) -->
         <button id="toggleControlsButton" aria-label="Toggle Control Panel">
             <svg id="toggleIcon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <!-- Icon for 'Controls Hidden' (Chevrons Up) -->
                 <polyline points="6 9 12 15 18 9"></polyline>
             </svg>
         </button>
-        <!-- End Toggle Control Button -->
-
-        <!-- LEFT SIDE: Battery Status only -->
         <div id="status-left">
-            <!-- Battery Status - CIRCULAR Icon with Percentage -->
             <div id="battery-status">
-                <!-- New Circular Battery Icon Container -->
                 <svg id="batteryIconRing" class="battery-icon-ring" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <!-- SVG contents will be dynamically generated by JS -->
-                </svg>
+                    </svg>
                 <span id="battery-level-text">--%</span>
             </div>
         </div>
 
-        <!-- RIGHT SIDE: FPS and Time -->
         <div class="flex space-x-4">
             <span id="status-fps" class="status-text">FPS: --</span>
             <span id="status-time" class="status-text">--:--:--</span>
         </div>
     </div>
-    <!-- END STATUS BAR -->
-
     <script>
         // Global variables for Firebase access (required by the environment, though not used here)
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
