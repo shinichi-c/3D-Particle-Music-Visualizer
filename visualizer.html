@@ -287,6 +287,13 @@
                 </div>
             </div>
 
+            <!-- NEW: FPS display added here -->
+            <div class="flex justify-between items-center mb-4 p-2 bg-indigo-50 rounded-xl">
+                <span class="text-sm font-semibold text-gray-700">Live Performance:</span>
+                <span id="control-panel-fps" class="text-sm font-bold text-indigo-600">-- FPS</span>
+            </div>
+            <!-- END NEW FPS DISPLAY -->
+
             <div class="grid grid-cols-3 gap-y-3 mb-6 text-sm">
                 
                 <div class="quick-setting-item" id="toggleMotion">
@@ -380,7 +387,7 @@
         </div>
 
         <div class="flex space-x-4">
-            <span id="status-fps" class="status-text">FPS: --</span>
+            <!-- Removed FPS text from status bar -->
             <span id="status-time" class="status-text">--:--:--</span>
         </div>
     </div>
@@ -797,7 +804,7 @@
         function setBatteryStatusUI(level, charging) {
             const batteryIconSvg = document.getElementById('batteryIconRing');
             const batteryText = document.getElementById('battery-level-text');
-            const fpsText = document.getElementById('status-fps');
+            // const fpsText = document.getElementById('status-fps'); // REMOVED
             const timeText = document.getElementById('status-time');
             
             batteryText.textContent = `${level}%`;
@@ -836,7 +843,7 @@
             
             // APPLY DYNAMIC COLOR TO ALL TEXT ELEMENTS
             batteryText.style.color = currentTextColor;
-            fpsText.style.color = currentTextColor;
+            // fpsText.style.color = currentTextColor; // REMOVED
             timeText.style.color = currentTextColor;
             
             // --- Dynamic Circular SVG Update ---
@@ -933,7 +940,11 @@
             lastTime = currentTime;
             if (delta > 0) {
                 fps = Math.round(1000 / delta);
-                document.getElementById('status-fps').textContent = `FPS: ${fps}`;
+                // Update FPS in the control panel
+                const fpsElement = document.getElementById('control-panel-fps');
+                if (fpsElement) {
+                    fpsElement.textContent = `${fps} FPS`;
+                }
             }
 
             if (isPlaying) {
@@ -1205,3 +1216,4 @@
     </script>
 </body>
 </html>
+
