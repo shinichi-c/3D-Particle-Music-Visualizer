@@ -265,8 +265,7 @@
         }
         /* Custom Header accent */
         #controls-header {
-            /* Added subtle purple border for a premium touch */
-            border-bottom: 4px solid #6366f1;
+            /* Removed border-bottom as requested */
             border-radius: 0 0 4px 4px;
             padding-bottom: 1rem;
             margin-bottom: 1rem;
@@ -280,21 +279,32 @@
 
     <div id="controls-overlay">
         <div id="controls">
-            <div id="controls-header" class="flex justify-between items-center">
-                <div class="flex items-center space-x-2">
-                    <img src="https://placehold.co/36x36/4f46e5/ffffff?text=3D" class="w-9 h-9 rounded-full"/>
-                    <span class="font-semibold text-lg">Visualizer Controls</span>
+            <!-- HEADER: Icon removed as requested -->
+            <div id="controls-header" class="flex justify-start items-center">
+                <!-- No content here -->
+            </div>
+
+            <!-- FPS display block removed as requested -->
+            
+            <!-- SLIDERS MOVED TO THE TOP, as requested -->
+            <!-- Removed border-t and pt-4 classes since they are now at the top -->
+            <div class="space-y-4 mb-6">
+                <div class="flex items-center space-x-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-gray-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 8a5 5 0 0 1 0 8"/><path d="M17.66 6.34a9 9 0 0 1 0 11.32"/><path d="M2 10h3l5-5v14l-5-5H2z"/></svg>
+                    <input type="range" min="-30" max="0" value="-6" step="1" id="volumeSlider" class="flex-grow">
+                    <span class="text-sm font-semibold text-gray-700 w-8 text-right">Vol</span>
+                </div>
+
+                <div class="flex items-center space-x-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-gray-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M20 12h2M2 12h2"/></svg>
+                    <input type="range" min="1" max="5" value="2" step="0.1" id="sizeSlider" class="flex-grow">
+                    <span class="text-sm font-semibold text-gray-700 w-8 text-right">Size</span>
                 </div>
             </div>
 
-            <!-- NEW: FPS display added here -->
-            <div class="flex justify-between items-center mb-4 p-2 bg-indigo-50 rounded-xl">
-                <span class="text-sm font-semibold text-gray-700">Live Performance:</span>
-                <span id="control-panel-fps" class="text-sm font-bold text-indigo-600">-- FPS</span>
-            </div>
-            <!-- END NEW FPS DISPLAY -->
 
-            <div class="grid grid-cols-3 gap-y-3 mb-6 text-sm">
+            <!-- Quick Settings (now below sliders) -->
+            <div class="grid grid-cols-3 gap-y-3 mb-6 text-sm pt-4 border-t border-gray-300">
                 
                 <div class="quick-setting-item" id="toggleMotion">
                     <div class="quick-setting-icon active-icon" id="iconMotion">
@@ -338,20 +348,6 @@
                 
             </div>
 
-            <div class="space-y-4 mb-6 pt-4 border-t border-gray-300">
-                <div class="flex items-center space-x-3">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-gray-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 8a5 5 0 0 1 0 8"/><path d="M17.66 6.34a9 9 0 0 1 0 11.32"/><path d="M2 10h3l5-5v14l-5-5H2z"/></svg>
-                    <input type="range" min="-30" max="0" value="-6" step="1" id="volumeSlider" class="flex-grow">
-                    <span class="text-sm font-semibold text-gray-700 w-8 text-right">Vol</span>
-                </div>
-
-                <div class="flex items-center space-x-3">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-gray-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M20 12h2M2 12h2"/></svg>
-                    <input type="range" min="1" max="5" value="2" step="0.1" id="sizeSlider" class="flex-grow">
-                    <span class="text-sm font-semibold text-gray-700 w-8 text-right">Size</span>
-                </div>
-            </div>
-
 
             <div class="space-y-4">
                 <label for="audioFile" class="file-input-label">
@@ -387,7 +383,6 @@
         </div>
 
         <div class="flex space-x-4">
-            <!-- Removed FPS text from status bar -->
             <span id="status-time" class="status-text">--:--:--</span>
         </div>
     </div>
@@ -405,9 +400,8 @@
         const DRAG = 0.98;
         const REPEL_STRENGTH = 0.005;
 
-        // --- FPS Tracking ---
+        // --- FPS Tracking (variables kept for time tracking) ---
         let lastTime = 0;
-        let fps = 0;
         
         // --- Control State ---
         const controlsState = {
@@ -586,7 +580,6 @@
             geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
             geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 
-            // Reverting the change: no custom texture map is used here. 
             // THREE.js defaults to a square texture when 'map' is omitted.
             material = new THREE.PointsMaterial({
                 size: controlsState.particleSize,
@@ -742,6 +735,7 @@
                             vz *= (1 + high * 0.01);
 
                             // Change color towards the theme's 'high' color (simple color shift)
+                            // Note: Color updates rely on HSL logic applied to RGB.
                             colorArray[i3] = Math.min(1.0, colorArray[i3] + high * 0.02 * theme.high[0]);
                             colorArray[i3 + 1] = Math.min(1.0, colorArray[i3 + 1] + high * 0.02 * theme.high[1]);
                             colorArray[i3 + 2] = Math.max(0.2, colorArray[i3 + 2] - high * 0.01 * theme.high[2]);
@@ -804,7 +798,6 @@
         function setBatteryStatusUI(level, charging) {
             const batteryIconSvg = document.getElementById('batteryIconRing');
             const batteryText = document.getElementById('battery-level-text');
-            // const fpsText = document.getElementById('status-fps'); // REMOVED
             const timeText = document.getElementById('status-time');
             
             batteryText.textContent = `${level}%`;
@@ -843,7 +836,6 @@
             
             // APPLY DYNAMIC COLOR TO ALL TEXT ELEMENTS
             batteryText.style.color = currentTextColor;
-            // fpsText.style.color = currentTextColor; // REMOVED
             timeText.style.color = currentTextColor;
             
             // --- Dynamic Circular SVG Update ---
@@ -935,17 +927,10 @@
         function animate(currentTime) {
             requestAnimationFrame(animate);
 
-            // FPS Calculation
-            const delta = currentTime - lastTime;
+            // Time Tracking (for physics, if needed)
+            // const delta = currentTime - lastTime;
             lastTime = currentTime;
-            if (delta > 0) {
-                fps = Math.round(1000 / delta);
-                // Update FPS in the control panel
-                const fpsElement = document.getElementById('control-panel-fps');
-                if (fpsElement) {
-                    fpsElement.textContent = `${fps} FPS`;
-                }
-            }
+            // FPS calculation removed as requested.
 
             if (isPlaying) {
                 analyzeAudio();
