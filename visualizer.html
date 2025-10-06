@@ -8,6 +8,13 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
     <style>
+        /* --- CSS Custom Properties for Theming --- */
+        :root {
+            --primary-color: #4f46e5;
+            --primary-color-dark: #4338ca;
+            --primary-color-shadow: rgba(79, 70, 229, 0.5);
+        }
+
         /* Custom CSS to match the Control Panel screenshot style */
         body {
             font-family: 'Inter', sans-serif;
@@ -87,46 +94,47 @@
             transform: scale(0.95);
         }
 
-        /* Active state styles */
+        /* Active state styles now use the custom property */
         .active-icon {
-            background: #4f46e5;
+            background: var(--primary-color);
             color: white;
         }
         .inactive-icon {
             background: rgba(0, 0, 0, 0.1);
-            color: #4f46e5;
+            color: var(--primary-color);
         }
         
-        /* UPDATED START BUTTON STYLING */
+        /* UPDATED START BUTTON STYLING (Pill Shape) */
         .control-button {
             width: 100%;
-            padding: 0.85rem; /* Slightly taller */
-            font-size: 1rem;
-            font-weight: 700; /* Bolder text */
+            padding: 0.85rem;
+            font-size: 0.9rem;
+            font-weight: 700;
             color: #ffffff;
-            background: linear-gradient(135deg, #4f46e5, #6366f1);
+            /* Use custom properties for gradient background */
+            background: linear-gradient(135deg, var(--primary-color-dark), var(--primary-color));
             border: none;
-            border-radius: 10px; /* Slightly more rounded */
+            border-radius: 9999px; /* PILL SHAPE */
             cursor: pointer;
-            box-shadow: 0 6px 15px rgba(79, 70, 229, 0.5); /* Stronger initial shadow */
+            box-shadow: 0 6px 15px var(--primary-color-shadow);
             transition: all 0.2s ease;
         }
         .control-button:hover {
-            background: linear-gradient(135deg, #6366f1, #818cf8);
-            box-shadow: 0 8px 20px rgba(79, 70, 229, 0.7);
-            transform: translateY(-2px); /* Lighter lift */
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-color-dark));
+            box-shadow: 0 8px 20px var(--primary-color-shadow);
+            transform: translateY(-2px);
         }
         .control-button:active {
-            transform: translateY(1px); /* New press effect */
-            box-shadow: 0 2px 5px rgba(79, 70, 229, 0.4);
+            transform: translateY(1px);
+            box-shadow: 0 2px 5px var(--primary-color-shadow);
         }
         
         /* New Range Slider Styling for a Fresh Look */
         input[type="range"] {
             -webkit-appearance: none;
             width: 100%;
-            height: 6px; /* Slightly thinner track */
-            background: rgba(0, 0, 0, 0.1); /* Very light, subtle track */
+            height: 6px;
+            background: rgba(0, 0, 0, 0.1);
             border-radius: 3px;
             outline: none;
             cursor: pointer;
@@ -134,16 +142,18 @@
         input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
-            width: 18px; /* Slightly smaller thumb */
+            width: 18px;
             height: 18px;
             border-radius: 50%;
-            background: #4f46e5; /* Bold Indigo */
+            /* Use custom property for thumb color */
+            background: var(--primary-color);
             cursor: pointer;
-            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3); /* Clean lift effect */
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
             transition: background 0.1s;
         }
         input[type="range"]::-webkit-slider-thumb:hover {
-            background: #3730a3; /* Darker on hover */
+            /* Use custom property for hover color */
+            background: var(--primary-color-dark);
         }
 
 
@@ -160,26 +170,28 @@
             display: none;
         }
 
-        /* UPDATED FILE UPLOAD BUTTON STYLING (Ghost Button) */
+        /* UPDATED FILE UPLOAD BUTTON STYLING (Ghost Button, Pill Shape) */
         .file-input-label {
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 0.5rem; /* Space between icon and text */
+            gap: 0.5rem;
             width: 100%;
             padding: 0.85rem 1rem;
-            background-color: transparent; /* Ghost style */
-            border: 2px solid #6366f1; /* Primary color border */
-            border-radius: 10px; 
+            background-color: transparent;
+            /* Use custom property for border/text color */
+            border: 2px solid var(--primary-color);
+            border-radius: 9999px; /* PILL SHAPE */
             cursor: pointer;
             font-weight: 600;
-            color: #4f46e5;
+            color: var(--primary-color);
+            font-size: 0.9rem;
             transition: background-color 0.2s, color 0.2s, border-color 0.2s;
         }
         .file-input-label:hover {
-            background-color: #eef2ff; /* Very light background on hover */
-            color: #3730a3; /* Darker text on hover */
-            border-color: #3730a3;
+            background-color: #eef2ff;
+            color: var(--primary-color-dark);
+            border-color: var(--primary-color-dark);
         }
         
         /* Central toggle button style */
@@ -192,7 +204,7 @@
             height: 48px;
             border-radius: 50%;
             background: #e0e0e0; 
-            border: 4px solid rgba(255, 255, 255, 1.0); /* Border matches the new status bar color */
+            border: 4px solid rgba(255, 255, 255, 1.0);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -204,7 +216,7 @@
             background: #dadada;
         }
         #toggleControlsButton svg {
-            color: #4f46e5; 
+            color: var(--primary-color); /* Use custom property for toggle icon */
             width: 24px;
             height: 24px;
             transition: transform 0.3s;
@@ -212,7 +224,6 @@
 
         /* CHROME OS STYLE STATUS BAR */
         #status-bar {
-            /* CHANGED: Set to solid white background with full opacity (1.0) */
             background: rgba(255, 255, 255, 1.0); 
             color: #374151; 
             backdrop-filter: blur(10px);
@@ -236,10 +247,9 @@
 
         /* Battery Status styles */
         .status-text {
-            /* REMOVED fixed color: #6b7280; -> Color is now set dynamically by JS to match battery text color */
             font-weight: 500;
             font-size: 0.9rem; 
-            transition: color 0.3s ease; /* Added transition for smooth color change */
+            transition: color 0.3s ease;
         }
         #battery-status {
             display: flex;
@@ -258,16 +268,29 @@
         #battery-level-text {
             font-size: 0.9rem;
             font-weight: 700;
-            color: #374151; /* Initial color */
+            color: #374151;
             line-height: 1; 
-            transition: color 0.3s ease; /* Added transition for smooth color change */
+            transition: color 0.3s ease;
         }
         /* Custom Header accent */
         #controls-header {
-            /* Removed border-bottom as requested */
             border-radius: 0 0 4px 4px;
             padding-bottom: 1rem;
             margin-bottom: 1rem;
+        }
+        
+        /* Style for the music icon in the status bar */
+        #music-status-icon {
+            transition: transform 0.2s ease-out;
+        }
+        #music-status-icon.playing {
+            /* Small continuous pulse/animation to indicate activity */
+            animation: pulse-ring 1s infinite;
+        }
+        @keyframes pulse-ring {
+            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+            70% { box-shadow: 0 0 0 5px rgba(16, 185, 129, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
         }
 
     </style>
@@ -278,15 +301,11 @@
 
     <div id="controls-overlay">
         <div id="controls">
-            <!-- HEADER: Icon removed as requested -->
             <div id="controls-header" class="flex justify-start items-center">
                 <!-- No content here -->
             </div>
 
-            <!-- FPS display block removed as requested -->
-            
-            <!-- SLIDERS MOVED TO THE TOP, as requested -->
-            <!-- Removed border-t and pt-4 classes since they are now at the top -->
+            <!-- SLIDERS MOVED TO THE TOP -->
             <div class="space-y-4 mb-6">
                 <div class="flex items-center space-x-3">
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-gray-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 8a5 5 0 0 1 0 8"/><path d="M17.66 6.34a9 9 0 0 1 0 11.32"/><path d="M2 10h3l5-5v14l-5-5H2z"/></svg>
@@ -302,9 +321,8 @@
             </div>
 
 
-            <!-- Quick Settings (now below sliders) -->
-            <!-- ADDED: 4th column for Design toggle -->
-            <div class="grid grid-cols-4 gap-y-3 mb-6 text-sm pt-4 border-t border-gray-300">
+            <!-- Quick Settings: Removed the border-t and pt-4 classes -->
+            <div class="grid grid-cols-4 gap-y-3 mb-6 text-sm">
                 
                 <div class="quick-setting-item" id="toggleMotion">
                     <div class="quick-setting-icon active-icon" id="iconMotion">
@@ -330,7 +348,7 @@
                     <span class="text-xs text-green-600 font-semibold" id="statusBass">Active</span>
                 </div>
                 
-                <!-- NEW PARTICLE DESIGN TOGGLE -->
+                <!-- PARTICLE DESIGN TOGGLE -->
                 <div class="quick-setting-item" id="cycleDesign">
                     <div class="quick-setting-icon active-icon" id="iconDesign">
                         <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m18 8-5 4 4 5L7 12"/></svg>
@@ -338,11 +356,10 @@
                     <span class="font-medium text-gray-800">Design</span>
                     <span class="text-xs text-green-600 font-semibold" id="statusDesign">Swarm</span>
                 </div>
-                <!-- END NEW PARTICLE DESIGN TOGGLE -->
-
 
                 <div class="quick-setting-item" id="cycleTheme">
-                    <div class="quick-setting-icon inactive-icon text-indigo-500" id="iconTheme">
+                    <!-- Icon color will be set dynamically in JS to match theme.primary -->
+                    <div class="quick-setting-icon inactive-icon" id="iconTheme">
                         <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 7c-4.4 0-8 3.6-8 8s3.6 8 8 8c3 0 5.6-1.7 6.9-4.2M12 7V4M12 21v-3"/><path d="M12 7a8 8 0 0 1 8 8c0 3-1.7 5.6-4.2 6.9"/><path d="M12 7a8 8 0 0 0-8 8c0 3 1.7 5.6 4.2 6.9"/></svg>
                     </div>
                     <span class="font-medium text-gray-800">Theme</span>
@@ -359,18 +376,26 @@
                 
             </div>
 
-
-            <div class="space-y-4">
-                <label for="audioFile" class="file-input-label">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
-                    <span id="fileNameDisplay" class="text-sm">Tap to Upload Music (.mp3, .wav, etc.)</span>
+            <!-- MODIFIED BUTTON LAYOUT: Pill shapes and new icons applied -->
+            <div class="flex space-x-3 mb-4">
+                <label for="audioFile" class="file-input-label flex-1">
+                    <!-- NEW CLEAN UPLOAD ICON (Upload Cloud) -->
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M12 12v9"/><path d="m16 16-4-4-4 4"/></svg>
+                    <span id="fileNameDisplay" class="text-sm">Tap to Upload Music</span> 
                 </label>
-                <input type="file" accept="audio/*" id="audioFile">
                 
-                <button id="startButton" class="control-button">
-                    Start Synthetic Beat
+                <button id="startButton" class="control-button flex-1 flex items-center justify-center space-x-2">
+                    <!-- UPDATED CLEAN START ICON (Play Circle) -->
+                    <svg id="startPauseIcon" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"/>
+                        <!-- Refined Play Triangle for a fresh look -->
+                        <polygon fill="white" stroke="none" points="9.5 8 16.5 12 9.5 16"/>
+                    </svg>
+                    <span id="startButtonText">Start Synthetic Beat</span>
                 </button>
             </div>
+            <!-- Hidden file input is placed outside the flex container -->
+            <input type="file" accept="audio/*" id="audioFile">
             
             <div class="text-center text-xs mt-3 text-gray-500">
                 Tap the screen to rotate and pinch/scroll to zoom.
@@ -392,8 +417,17 @@
                 <span id="battery-level-text">--%</span>
             </div>
         </div>
-
-        <div class="flex space-x-4">
+        
+        <!-- UPDATED RIGHT-SIDE STATUS: Includes Music Icon and Time -->
+        <div class="flex items-center space-x-4">
+            <div id="music-status-icon" class="text-white bg-green-600 rounded-full p-1 shadow-md hidden">
+                <!-- Speaker/Music Icon (Clean Stroke-based update) -->
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                    <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+                </svg>
+            </div>
             <span id="status-time" class="status-text">--:--:--</span>
         </div>
     </div>
@@ -436,11 +470,29 @@
             particleModeIndex: 0 // NEW: Track particle design mode
         };
 
+        // --- UPDATED COLOR THEMES with CSS variable values ---
         const COLOR_THEMES = [
-            // [Initial HSL Hue, Initial Sat, Initial Light, High Freq Hue, High Freq Sat, High Freq Light]
-            { name: "Indigo/Pink", initial: [0.6, 0.8, 0.5], high: [0.95, 0.9, 0.7], initialColor: '#818cf8', highColor: '#fb7185' }, // Blue-ish to Pink/Red
-            { name: "Fire", initial: [0.1, 0.8, 0.5], high: [0.0, 1.0, 0.9], initialColor: '#f97316', highColor: '#fef3c7' },       // Orange to White/Yellow
-            { name: "Ocean", initial: [0.55, 0.9, 0.5], high: [0.35, 0.9, 0.8], initialColor: '#3b82f6', highColor: '#a7f3d0' },    // Deep Blue to Cyan/Green
+            // Indigo/Pink (Default)
+            { 
+                name: "Indigo/Pink", 
+                initial: [0.6, 0.8, 0.5], high: [0.95, 0.9, 0.7], 
+                primary: '#4f46e5', primaryDark: '#4338ca', primaryShadow: 'rgba(79, 70, 229, 0.5)',
+                highColor: '#fb7185' 
+            }, 
+            // Fire (Orange/Yellow)
+            { 
+                name: "Fire", 
+                initial: [0.1, 0.8, 0.5], high: [0.0, 1.0, 0.9], 
+                primary: '#ea580c', primaryDark: '#c2410c', primaryShadow: 'rgba(234, 88, 12, 0.5)', 
+                highColor: '#fef3c7' 
+            },       
+            // Ocean (Blue/Cyan)
+            { 
+                name: "Ocean", 
+                initial: [0.55, 0.9, 0.5], high: [0.35, 0.9, 0.8], 
+                primary: '#2563eb', primaryDark: '#1e40af', primaryShadow: 'rgba(37, 99, 235, 0.5)',
+                highColor: '#a7f3d0' 
+            },    
         ];
 
         // --- Camera Controls ---
@@ -458,8 +510,12 @@
         let fft, source, masterVolume; 
         let isPlaying = false;
         let noise, kick; 
-        let currentStartButtonText = 'Start Synthetic Beat';
-
+        let customFileLoaded = false;
+        
+        // NEW: UI references for status
+        let musicStatusIcon;
+        let startPauseIcon;
+        
         const AUDIO_PARAMS = {
             fftSize: 512, 
             bassRange: [20, 150],
@@ -467,7 +523,6 @@
             highRange: [2000, 10000]
         };
         let audioData = { bass: 0, mid: 0, high: 0 };
-        let customFileLoaded = false;
         
         /**
          * Converts frequency range to FFT bin indices.
@@ -502,14 +557,14 @@
             
             Tone.Transport.bpm.value = 120;
             
-            // Set default source to the combined synthetic sound
+            // CONNECT KICK AND NOISE TO FFT/MASTER VOLUME CHAIN
             const synthMix = new Tone.Channel();
             kick.connect(synthMix);
             noise.connect(synthMix);
             source = synthMix; 
             
             // Initial button text setup
-            document.getElementById('startButton').textContent = currentStartButtonText;
+            document.getElementById('startButtonText').textContent = 'Start Synthetic Beat';
         }
 
         /**
@@ -521,20 +576,25 @@
                 if (source.state === 'started') source.stop();
                 source.dispose();
             }
+            
+            // If the synthetic beat is running, stop the transport to prepare for the player
+            if (isPlaying && !(source instanceof Tone.Player)) {
+                Tone.Transport.stop();
+            }
 
             const url = URL.createObjectURL(file);
             
             const player = new Tone.Player(url, () => {
                 console.log("Audio file loaded successfully.");
-                document.getElementById('fileNameDisplay').textContent = `Loaded: ${file.name}`;
+                // Text simplified for better fit in the two-column layout
+                document.getElementById('fileNameDisplay').textContent = `Loaded: ${file.name.substring(0, 15)}...`; 
             });
             player.loop = true;
             
             source = player;
             customFileLoaded = true;
 
-            currentStartButtonText = 'Visualize Uploaded Track';
-            document.getElementById('startButton').textContent = currentStartButtonText;
+            document.getElementById('startButtonText').textContent = isPlaying ? 'Pause Visualization' : 'Visualize Track';
         }
 
         /**
@@ -551,7 +611,6 @@
             const avg = (arr, start, end) => {
                 let sum = 0;
                 for (let i = start; i < end; i++) {
-                    // Using Tone.dbToGain() to convert dB values (typical of FFT output) to linear gain (0-1)
                     sum += Tone.dbToGain(spectrum[i]);
                 }
                 return sum / (end - start);
@@ -567,7 +626,6 @@
             let highEnergy = avg(spectrum, hStart, hEnd);
 
             // Mapping and clamping for visualization scale
-            // These multipliers scale the energy to a usable visual range (0-10, 0-5, 0-3)
             audioData.bass = Math.min(10, Math.max(0, bassEnergy * 5)); 
             audioData.mid = Math.min(5, Math.max(0, midEnergy * 3));
             audioData.high = Math.min(3, Math.max(0, highEnergy * 2));
@@ -604,7 +662,7 @@
             // Mobile/Touch Support
             renderer.domElement.addEventListener('touchstart', onPointerDown, { passive: false });
             document.addEventListener('touchend', onPointerUp);
-            renderer.domElement.addEventListener('touchmove', onPointerMove, { passive: false });
+            document.addEventListener('touchmove', onPointerMove, { passive: false });
         }
         
         /**
@@ -946,8 +1004,8 @@
 
             // 2. Foreground arc (the battery level)
             // stroke-dasharray is the total length, stroke-dashoffset hides the unfilled part
-            const foregroundArc = `<circle r="${radius}" cx="12" cy="12" stroke="${ringColor}" stroke-width="3" fill="none" stroke-linecap="round" 
-                                   stroke-dasharray="${circumference}" stroke-dashoffset="${strokeOffset}" 
+            const foregroundArc = `<circle r="${radius}" cx="12" cy="12" stroke="${ringColor}" stroke-width="3" fill="none" 
+                                   stroke-linecap="round" stroke-dasharray="${circumference}" stroke-dashoffset="${strokeOffset}" 
                                    style="transition: stroke-dashoffset 0.5s ease-out; transform: rotate(-90deg); transform-origin: 50% 50%;" />`;
             
             let centerElement = '';
@@ -1014,6 +1072,70 @@
                 // Icon for 'Controls Hidden' (Chevrons Down)
                 icon.innerHTML = '<polyline points="18 15 12 9 6 15"></polyline>';
             }
+        }
+        
+        // --- Audio Control Functions (Refactored to support play/pause toggle) ---
+
+        /**
+         * Starts the audio playback and visualization.
+         */
+        async function startAudio() {
+            // Start Tone.js context
+            await Tone.start();
+            
+            // Connect the source (either file player or synthetic mix) to the FFT analyzer
+            // This is safe even if already connected
+            source.connect(fft); 
+
+            // Refined Pause Icon
+            const pauseIcon = '<circle cx="12" cy="12" r="10"/><rect fill="white" stroke="none" x="9.5" y="8" width="2" height="8"/><rect fill="white" stroke="none" x="12.5" y="8" width="2" height="8"/>';
+
+            if (customFileLoaded && source instanceof Tone.Player) {
+                source.start(); // Start or resume player
+                document.getElementById('startButtonText').textContent = 'Pause Visualization';
+                startPauseIcon.innerHTML = pauseIcon; 
+            } else {
+                // Start synthetic components if we're using them
+                if (!(source instanceof Tone.Player)) {
+                    noise.start();
+                    kick.toDestination(); // Needed to send kick to destination if it wasn't already connected to synthMix that is
+                }
+                Tone.Transport.start(); // Start or resume transport
+                document.getElementById('startButtonText').textContent = 'Pause Synthetic Beat';
+                startPauseIcon.innerHTML = pauseIcon; 
+            }
+            
+            isPlaying = true;
+            musicStatusIcon.classList.remove('hidden');
+            musicStatusIcon.classList.add('playing'); // Add pulse animation
+
+            // Hide controls
+            document.getElementById('controls-overlay').classList.add('hidden-controls');
+            controlsState.controlsVisible = false;
+            document.getElementById('toggleIcon').innerHTML = '<polyline points="18 15 12 9 6 15"></polyline>';
+        }
+
+        /**
+         * Stops or pauses the audio playback.
+         */
+        function stopAudio() {
+            // Refined Play Icon
+            const playIcon = '<circle cx="12" cy="12" r="10"/><polygon fill="white" stroke="none" points="9.5 8 16.5 12 9.5 16"/>';
+
+            if (customFileLoaded && source instanceof Tone.Player) {
+                source.pause(); 
+                document.getElementById('startButtonText').textContent = 'Resume Visualization';
+            } else {
+                // Stop the synthetic beat transport
+                Tone.Transport.pause(); 
+                document.getElementById('startButtonText').textContent = 'Resume Synthetic Beat';
+            }
+            
+            isPlaying = false;
+            musicStatusIcon.classList.add('hidden');
+            musicStatusIcon.classList.remove('playing'); // Remove pulse animation
+            
+            startPauseIcon.innerHTML = playIcon; 
         }
 
         /**
@@ -1207,12 +1329,28 @@
             }
         });
 
+        /**
+         * Sets the CSS Custom Properties based on the current theme.
+         */
+        function setInitialTheme() {
+            const theme = COLOR_THEMES[controlsState.themeIndex];
+            
+            // Update CSS Custom Properties on the root element
+            document.documentElement.style.setProperty('--primary-color', theme.primary);
+            document.documentElement.style.setProperty('--primary-color-dark', theme.primaryDark);
+            document.documentElement.style.setProperty('--primary-color-shadow', theme.primaryShadow);
+
+            // Update theme icon color (uses inline style since it's an SVG child element)
+            document.getElementById('iconTheme').style.color = theme.primary; 
+            document.getElementById('statusTheme').textContent = theme.name;
+        }
+
+
         document.getElementById('cycleTheme').addEventListener('click', () => {
             controlsState.themeIndex = (controlsState.themeIndex + 1) % COLOR_THEMES.length;
             const theme = COLOR_THEMES[controlsState.themeIndex];
             
-            document.getElementById('statusTheme').textContent = theme.name;
-            document.getElementById('iconTheme').style.color = theme.initialColor;
+            setInitialTheme(); // Apply the new theme colors
             
             // Re-colorize all particles instantly
             updateParticleColors();
@@ -1247,50 +1385,27 @@
         // --- Audio/Start Event Listeners ---
         document.getElementById('audioFile').addEventListener('change', (event) => {
             const file = event.target.files[0];
-            const startButton = document.getElementById('startButton');
 
             if (file) {
+                // If audio is playing and a new file is loaded, pause the current playback before setting up the new file
+                if (isPlaying) {
+                    stopAudio();
+                }
                 setupAudioFile(file);
-                startButton.textContent = 'Visualize Uploaded Track';
             } else {
                 customFileLoaded = false;
-                // Revert to initial synthetic beat source if file is removed
-                // Re-initialize source (must be done in startButton handler)
-                document.getElementById('fileNameDisplay').textContent = 'Tap to Upload Music (.mp3, .wav, etc.)';
-                startButton.textContent = 'Start Synthetic Beat';
+                // If a file is currently loaded and playing, it will stop/pause when input is cleared.
+                document.getElementById('fileNameDisplay').textContent = 'Tap to Upload Music';
+                document.getElementById('startButtonText').textContent = isPlaying ? 'Pause Synthetic Beat' : 'Start Synthetic Beat';
             }
         });
 
         document.getElementById('startButton').addEventListener('click', async () => {
-            if (isPlaying) return;
-
-            const startButton = document.getElementById('startButton');
-
-            // Start Tone.js context (required for all audio interaction)
-            await Tone.start();
-            console.log("Audio context started.");
-
-            // Connect the source (either file player or synthetic mix) to the FFT analyzer
-            source.connect(fft); 
-
-            if (customFileLoaded && source instanceof Tone.Player) {
-                // Play uploaded file
-                source.start(0); 
-                startButton.textContent = 'Visualizing Music...';
+            if (isPlaying) {
+                stopAudio();
             } else {
-                // Play synthetic beat (default fallback)
-                noise.start();
-                kick.toDestination(); 
-                Tone.Transport.start();
-                startButton.textContent = 'Visualizing Beat...';
+                startAudio();
             }
-
-            isPlaying = true;
-
-            // Hide the control panel gracefully
-            document.getElementById('controls-overlay').classList.add('hidden-controls');
-            controlsState.controlsVisible = false; // Update state
-            document.getElementById('toggleIcon').innerHTML = '<polyline points="18 15 12 9 6 15"></polyline>'; // Set icon to UP
         });
 
         // Add event listener for the new toggle button
@@ -1298,6 +1413,11 @@
 
         // Initialize scene and audio components
         window.onload = function() {
+            // Get references to the new UI elements
+            musicStatusIcon = document.getElementById('music-status-icon');
+            startPauseIcon = document.getElementById('startPauseIcon');
+            
+            setInitialTheme(); // Set the default theme colors
             initScene();
             initAudio();
             
