@@ -448,11 +448,11 @@
         // --- Particle Mode Configurations ---
         const PARTICLE_MODES = [
             // Mode 0: Default Swarm
-            { name: "Swarm", count: 10000, size: 2.0, repulsionFactor: 1.0, initialSpread: 0.1 },
+            { name: "Swarm", count: 10000, size: 2.0, repulsionFactor: 1.0, initialSpread: 0.1, movementSpeed: 0.0001 },
             // Mode 1: Spherical Shell
-            { name: "Sphere", count: 3000, size: 3.5, repulsionFactor: 1.5, initialSpread: 0.2 },
+            { name: "Sphere", count: 3000, size: 3.5, repulsionFactor: 1.5, initialSpread: 0.2, movementSpeed: 0.001 },
             // Mode 2: Cubic Grid
-            { name: "Matrix", count: 5000, size: 1.5, repulsionFactor: 0.8, initialSpread: 0.3 }
+            { name: "Matrix", count: 5000, size: 1.5, repulsionFactor: 0.8, initialSpread: 0.3, movementSpeed: 0.0005 }
         ];
 
         // --- FPS Tracking (variables kept for time tracking) ---
@@ -503,7 +503,7 @@
         let isDragging = false;
         let previousMousePosition = { x: 0, y: 0 };
         const rotateSpeed = 0.005;
-        let cameraAngle = { x: 0, y: 0 }; 
+        let cameraAngle = { x: 0, y: 0.5 }; // Set initial view angle for 3D effect
         let initialTouchDistance = null; 
 
         // --- Tone.js Setup ---
@@ -547,7 +547,9 @@
 
             // Setup synthetic fallback components
             noise = new Tone.Noise("pink");
-            kick = new Tone.MembraneSynth();
+            kick = new Tone.MembraneSynth({ 
+                envelope: { attack: 0.005, decay: 0.8, sustain: 0.0, release: 0.0 } 
+            });
 
             // Define a simple looping beat for the fallback
             Tone.Transport.scheduleRepeat(time => {
@@ -580,6 +582,7 @@
             // If the synthetic beat is running, stop the transport to prepare for the player
             if (isPlaying && !(source instanceof Tone.Player)) {
                 Tone.Transport.stop();
+                noise.stop();
             }
 
             const url = URL.createObjectURL(file);
@@ -611,6 +614,7 @@
             const avg = (arr, start, end) => {
                 let sum = 0;
                 for (let i = start; i < end; i++) {
+                    // Use Tone.dbToGain to convert decibel values to linear gain
                     sum += Tone.dbToGain(spectrum[i]);
                 }
                 return sum / (end - start);
@@ -626,9 +630,10 @@
             let highEnergy = avg(spectrum, hStart, hEnd);
 
             // Mapping and clamping for visualization scale
-            audioData.bass = Math.min(10, Math.max(0, bassEnergy * 5)); 
-            audioData.mid = Math.min(5, Math.max(0, midEnergy * 3));
-            audioData.high = Math.min(3, Math.max(0, highEnergy * 2));
+            // Using smoothing filter to prevent overly rapid jitter
+            audioData.bass = (audioData.bass * 0.8) + (Math.min(10, Math.max(0, bassEnergy * 5)) * 0.2); 
+            audioData.mid = (audioData.mid * 0.8) + (Math.min(5, Math.max(0, midEnergy * 3)) * 0.2);
+            audioData.high = (audioData.high * 0.8) + (Math.min(3, Math.max(0, highEnergy * 2)) * 0.2);
         }
         
         /**
@@ -725,16 +730,19 @@
                 velocities[i3 + 2] = 0;
 
                 if (modeName === 'Sphere') {
-                    // Place particles on a sphere surface
-                    const radius = initialSpread * 0.8;
-                    const u = Math.random();
-                    const v = Math.random();
-                    const theta = u * 2 * Math.PI; // Angle around the y-axis
-                    const phi = Math.acos(2 * v - 1); // Angle from the y-axis (latitude)
+                    // Place particles on a sphere surface using Fibonacci sphere mapping
+                    const radius = initialSpread * 0.9;
+                    const N = PARTICLE_COUNT;
+                    const goldenRatio = (1 + Math.sqrt(5)) / 2;
+                    const iNormalized = i / goldenRatio;
                     
+                    const theta = 2 * Math.PI * (iNormalized - Math.floor(iNormalized));
+                    const phi = Math.acos(1 - 2 * i / N);
+
                     positions[i3] = radius * Math.sin(phi) * Math.cos(theta);
                     positions[i3 + 1] = radius * Math.cos(phi);
                     positions[i3 + 2] = radius * Math.sin(phi) * Math.sin(theta);
+
                 } else if (modeName === 'Matrix') {
                     // Place particles in a cubic grid
                     const grid = Math.ceil(Math.cbrt(PARTICLE_COUNT));
@@ -742,11 +750,14 @@
                     const yIndex = Math.floor((i / grid) % grid);
                     const zIndex = Math.floor(i / (grid * grid));
 
+                    // Calculate spacing to fill the initial spread volume
                     const spacing = initialSpread / grid;
+                    const offset = initialSpread / 2;
                     
-                    positions[i3] = (xIndex - grid / 2) * spacing;
-                    positions[i3 + 1] = (yIndex - grid / 2) * spacing;
-                    positions[i3 + 2] = (zIndex - grid / 2) * spacing;
+                    positions[i3] = (xIndex * spacing) - offset;
+                    positions[i3 + 1] = (yIndex * spacing) - offset;
+                    positions[i3 + 2] = (zIndex * spacing) - offset;
+
                 } else { // Swarm (Default)
                     // Random positions within a small cube
                     positions[i3] = (Math.random() - 0.5) * initialSpread;
@@ -771,8 +782,8 @@
             for (let i = 0; i < PARTICLE_COUNT; i++) {
                 const i3 = i * 3;
                 
-                // Set color based on current theme, adding randomness to lightness
-                color.setHSL(initialH + Math.random() * 0.1, initialS, initialL + Math.random() * 0.5);
+                // Set color based on current theme, adding slight randomness to lightness
+                color.setHSL(initialH + Math.random() * 0.05, initialS, initialL + Math.random() * 0.2);
                 colors[i3] = color.r;
                 colors[i3 + 1] = color.g;
                 colors[i3 + 2] = color.b;
@@ -825,6 +836,7 @@
             material.needsUpdate = true;
 
             const currentRepelStrength = REPEL_STRENGTH * mode.repulsionFactor;
+            const timeFactor = Date.now() * mode.movementSpeed;
 
 
             for (let i = 0; i < PARTICLE_COUNT; i++) {
@@ -852,13 +864,25 @@
                     vy += y * repelForce;
                     vz += z * repelForce;
                     
-                    // Mode-specific base motion (e.g., Matrix maintains its structure)
+                    // Mode-specific base motion
                     if (mode.name === 'Matrix') {
-                        // Apply a gentle rotation/wave effect
-                        const wave = Math.sin(Date.now() * 0.0005 + x * 0.1) * 0.01 * mid;
-                        vx += (z * 0.001 - x * 0.001) + wave;
-                        vy += (x * 0.001 - y * 0.001) + wave;
-                        vz += (y * 0.001 - z * 0.001) + wave;
+                        // Gentle wave effect to maintain structure but allow flow
+                        const noiseVal = Math.sin(timeFactor * 10 + i * 0.01) * 0.005;
+                        vx += (z * noiseVal);
+                        vy += (x * noiseVal);
+                        vz += (y * noiseVal);
+
+                    } else if (mode.name === 'Sphere') {
+                        // Gentle rotation and outward breath
+                        const rotationSpeed = 0.0001;
+                        vx += z * rotationSpeed;
+                        vz -= x * rotationSpeed;
+
+                        // Add a subtle outward breath based on bass
+                        const breath = bass * 0.01;
+                        vx += (x / distance) * breath;
+                        vy += (y / distance) * breath;
+                        vz += (z / distance) * breath;
                     }
 
 
@@ -867,7 +891,8 @@
                     // Bass reaction: Outward push/Explosion (Controlled by toggle)
                     if (controlsState.bass && bass > 0.5) {
                         if (i % 100 < bass * 50) { 
-                            const push = bass * 0.5;
+                            // Strong, directed push
+                            const push = bass * 0.8;
                             vx += (x / distance) * push;
                             vy += (y / distance) * push;
                             vz += (z / distance) * push;
@@ -875,7 +900,7 @@
                     }
 
                     // Mid reaction: Turbulence/Jitter 
-                    const jitter = (mid * 0.05) * (Math.random() - 0.5);
+                    const jitter = (mid * 0.08) * (Math.random() - 0.5);
                     vx += jitter;
                     vy += jitter;
                     vz += jitter;
@@ -884,29 +909,32 @@
                     if (controlsState.highFreq) {
                         if (high > 0.1) {
                             // Increase velocity based on high frequency energy
-                            vx *= (1 + high * 0.01);
-                            vy *= (1 + high * 0.01);
-                            vz *= (1 + high * 0.01);
+                            vx *= (1 + high * 0.02);
+                            vy *= (1 + high * 0.02);
+                            vz *= (1 + high * 0.02);
 
                             // Change color towards the theme's 'high' color (simple color shift)
-                            colorArray[i3] = Math.min(1.0, colorArray[i3] + high * 0.02 * theme.high[0]);
-                            colorArray[i3 + 1] = Math.min(1.0, colorArray[i3 + 1] + high * 0.02 * theme.high[1]);
-                            colorArray[i3 + 2] = Math.max(0.2, colorArray[i3 + 2] - high * 0.01 * theme.high[2]);
+                            colorArray[i3] = Math.min(1.0, colorArray[i3] + high * 0.05 * theme.high[0]);
+                            colorArray[i3 + 1] = Math.min(1.0, colorArray[i3 + 1] + high * 0.05 * theme.high[1]);
+                            colorArray[i3 + 2] = Math.min(1.0, colorArray[i3 + 2] + high * 0.05 * theme.high[2]);
                         } else {
-                            // Fade back to initial color
-                            colorArray[i3] *= 0.995;
-                            colorArray[i3 + 1] *= 0.995;
-                            colorArray[i3 + 2] = Math.min(theme.initial[2] + 0.1, colorArray[i3 + 2] + 0.005);
+                            // Smoothly fade colors back towards the initial theme color
+                            const initialColor = new THREE.Color().setHSL(theme.initial[0], theme.initial[1], theme.initial[2]);
+                            
+                            colorArray[i3] = (colorArray[i3] * 0.99) + (initialColor.r * 0.01);
+                            colorArray[i3 + 1] = (colorArray[i3 + 1] * 0.99) + (initialColor.g * 0.01);
+                            colorArray[i3 + 2] = (colorArray[i3 + 2] * 0.99) + (initialColor.b * 0.01);
                         }
                     }
+
 
                     // 3. Update Position & Apply Drag
                     vx *= DRAG;
                     vy *= DRAG;
                     vz *= DRAG;
                     
-                    // Cap velocity
-                    const maxVel = 5;
+                    // Cap velocity (increased max velocity for more action)
+                    const maxVel = 8;
                     vx = Math.min(maxVel, Math.max(-maxVel, vx));
                     vy = Math.min(maxVel, Math.max(-maxVel, vy));
                     vz = Math.min(maxVel, Math.max(-maxVel, vz));
@@ -1084,7 +1112,6 @@
             await Tone.start();
             
             // Connect the source (either file player or synthetic mix) to the FFT analyzer
-            // This is safe even if already connected
             source.connect(fft); 
 
             // Refined Pause Icon
@@ -1098,7 +1125,7 @@
                 // Start synthetic components if we're using them
                 if (!(source instanceof Tone.Player)) {
                     noise.start();
-                    kick.toDestination(); // Needed to send kick to destination if it wasn't already connected to synthMix that is
+                    // We don't need to connect kick to destination here as it's already connected to synthMix
                 }
                 Tone.Transport.start(); // Start or resume transport
                 document.getElementById('startButtonText').textContent = 'Pause Synthetic Beat';
@@ -1109,7 +1136,7 @@
             musicStatusIcon.classList.remove('hidden');
             musicStatusIcon.classList.add('playing'); // Add pulse animation
 
-            // Hide controls
+            // Hide controls on start for immersive experience
             document.getElementById('controls-overlay').classList.add('hidden-controls');
             controlsState.controlsVisible = false;
             document.getElementById('toggleIcon').innerHTML = '<polyline points="18 15 12 9 6 15"></polyline>';
@@ -1126,7 +1153,7 @@
                 source.pause(); 
                 document.getElementById('startButtonText').textContent = 'Resume Visualization';
             } else {
-                // Stop the synthetic beat transport
+                // Pause the synthetic beat transport
                 Tone.Transport.pause(); 
                 document.getElementById('startButtonText').textContent = 'Resume Synthetic Beat';
             }
